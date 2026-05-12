@@ -34,3 +34,17 @@ jobs:
 
       - name: Build Docker Image
         run: docker build -t enginex-node .
+
+      - name: Notify Success
+        if: success()
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="✅ Deployment successful for ${{ github.repository }} on ${{ github.ref }} by ${{ github.actor }}"
+
+      - name: Notify Failure
+        if: failure()
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="❌ Deployment failed for ${{ github.repository }} on ${{ github.ref }} by ${{ github.actor }}"
