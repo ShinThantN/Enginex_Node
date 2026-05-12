@@ -1,0 +1,94 @@
+name: telegram_notify
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deps
+        run: npm install
+
+      - name: Telegram Notify Success
+        if: success()
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d message_thread_id=7 \
+          -d text="✅ Deployment Successful
+          Repo: ${{ github.repository }}
+          Branch: ${{ github.ref_name }}
+          Commit: ${{ github.event.head_commit.message }}
+          By: ${{ github.actor }}"
+
+      - name: Telegram Notify Failure
+        if: failure()
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d message_thread_id=7 \
+          -d text="❌ Deployment Failed
+          Repo: ${{ github.repository }}
+          Branch: ${{ github.ref_name }}
+          By: ${{ github.actor }}"
+
+      - name: Notify PR opened/updated
+        if: github.event_name == 'pull_request' && github.event.action != 'closed'
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d message_thread_id=7 \
+          -d text="📦 Pull Request ${{ github.event.action }}
+
+          Title: ${{ github.event.pull_request.title }}
+          By: ${{ github.actor }}
+          Branch: ${{ github.event.pull_request.head.ref }}
+          Base: ${{ github.event.pull_request.base.ref }}
+
+          URL:
+          ${{ github.event.pull_request.html_url }}"
+
+      - name: Notify PR merged
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d message_thread_id=7 \
+          -d text="🎉 Pull Request merged
+
+          Title: ${{ github.event.pull_request.title }}
+          By: ${{ github.actor }}
+          Branch: ${{ github.event.pull_request.head.ref }}
+          Base: ${{ github.event.pull_request.base.ref }}
+
+          URL:
+          ${{ github.event.pull_request.html_url }}"
+
+      - name: Notify PR closed without merge
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == false
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d message_thread_id=7 \
+          -d text="⚠️ Pull Request closed without merge
+
+          Title: ${{ github.event.pull_request.title }}
+          By: ${{ github.actor }}
+          Branch: ${{ github.event.pull_request.head.ref }}
+          Base: ${{ github.event.pull_request.base.ref }}
+
+          URL:
+          ${{ github.event.pull_request.html_url }}"
