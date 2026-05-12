@@ -15,7 +15,9 @@
   "type": "module",
   "main": "index.ts",
   "scripts": {
-    "test": "npm test"
+    "test": "npm test",
+    "dev": "nodemon index.ts",
+    "build": "tsc"
   },
   "dependencies": {
     "cors": "^2.8.6",
