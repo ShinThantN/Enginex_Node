@@ -3,6 +3,31 @@
 
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
+enum role {
+  CLIENT
+  ENGINEER
+  TEAM
+}
+
+enum specialization {
+  CIVIL
+  ARCHITECT
+  MECHANICAL
+  ELECTRICAL
+}
+
+enum availability {
+  AVAILABLE
+  ONPROJECT
+  BUSY
+}
+
+enum projectStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -10,4 +35,114 @@ generator client {
 
 datasource db {
   provider = "mysql"
+}
+
+model Users {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  phone     String   @unique
+  password  String
+  fullName  String
+  role      role
+  createdAt DateTime @default(now())
+
+  userProfile     userProfile?
+  engineerProfile engineerProfile?
+  teamProfile     teamProfile?
+}
+
+model userProfile {
+  id Int @id @default(autoincrement())
+
+  userId Int   @unique
+  user   Users @relation(fields: [userId], references: [id])
+
+  requests projectRequests[]
+
+  createdAt DateTime @default(now())
+}
+
+model engineerProfile {
+  id               Int            @id @default(autoincrement())
+  specialization   specialization
+  availability     availability
+  bio              String
+  yearOfExperience Int
+  isVerified       Boolean
+
+  userId Int   @unique
+  user   Users @relation(fields: [userId], references: [id])
+
+  experience        engineerExperience[]
+  projects          engineerProjects[]
+  teamMembers       teamMembers[]
+  projectAssignment projectAssignment[]
+
+  createdAt DateTime @default(now())
+}
+
+model engineerExperience {
+  id          Int    @id @default(autoincrement())
+  companyName String
+  position    String
+  description String
+
+  profileId Int
+  profile   engineerProfile @relation(fields: [profileId], references: [id])
+}
+
+model engineerProjects {
+  id       Int    @id @default(autoincrement())
+  title    String
+  overview String
+
+  profileId Int
+  profile   engineerProfile @relation(fields: [profileId], references: [id])
+}
+
+model teamProfile {
+  id          Int    @id @default(autoincrement())
+  companyName String
+  description String
+
+  userId Int   @unique
+  user   Users @relation(fields: [userId], references: [id])
+
+  teamMembers       teamMembers[]
+  projectAssignment projectAssignment[]
+
+  createdAt DateTime @default(now())
+}
+
+model teamMembers {
+  id       Int      @id @default(autoincrement())
+  joinedAt DateTime
+
+  teamProfile Int
+  profileTeam teamProfile @relation(fields: [teamProfile], references: [id])
+
+  engineerProfile Int
+  profileEngineer engineerProfile @relation(fields: [engineerProfile], references: [id])
+}
+
+model projectRequests {
+  id          Int           @id @default(autoincrement())
+  title       String
+  budget      Decimal
+  status      projectStatus
+  description String
+
+  userProfileId Int
+  userProfile   userProfile @relation(fields: [userProfileId], references: [id])
+}
+
+model projectAssignment {
+  id     Int           @id @default(autoincrement())
+  status projectStatus
+
+  teamProfile Int
+  profileTeam teamProfile @relation(fields: [teamProfile], references: [id])
+
+  engineerProfile Int
+  profileEngineer engineerProfile @relation(fields: [engineerProfile], references: [id])
 }
