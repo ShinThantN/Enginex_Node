@@ -1,33 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
-enum role {
-  CLIENT
-  ENGINEER
-  TEAM
-}
-
-enum specialization {
-  CIVIL
-  ARCHITECT
-  MECHANICAL
-  ELECTRICAL
-}
-
-enum availability {
-  AVAILABLE
-  ONPROJECT
-  BUSY
-}
-
-enum projectStatus {
-  PENDING
-  ACCEPTED
-  DECLINED
-}
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -37,112 +10,364 @@ datasource db {
   provider = "mysql"
 }
 
-model Users {
+enum UserRole {
+  CLIENT
+  ENGINEER
+  COMPANY
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+enum EngineerSpecialization {
+  CIVIL
+  ARCHITECT
+  MECHANICAL
+  ELECTRICAL
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  BUSY
+  ON_PROJECT
+}
+
+enum TeamMemberApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ProjectVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum ProjectAssignmentType {
+  OPEN
+  DIRECT
+}
+
+enum ProjectStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ProjectResponseType {
+  APPLICATION
+  INVITATION
+}
+
+enum ProjectResponseStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum ContractStatus {
+  DRAFT
+  SIGNED
+  COMPLETED
+}
+
+enum VerificationType {
+  TU
+  COMPANY
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+enum PostVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  email        String     @unique @db.VarChar(255)
+  passwordHash String     @db.VarChar(255)
+  fullName     String     @db.VarChar(255)
+  phone        String?    @db.VarChar(50)
+  role         UserRole
+  profileImage String?    @db.VarChar(500)
+  status       UserStatus
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  refreshTokens        RefreshToken[]
+  engineerProfile      EngineerProfile?
+  teamProfile          TeamProfile?
+  projects             Project[]             @relation("ProjectClient")
+  posts                Post[]
+  ratingsGiven         Rating[]              @relation("RatingReviewer")
+  ratingsReceived      Rating[]              @relation("RatingTarget")
+  verificationRequests VerificationRequest[] @relation("VerificationRequester")
+  verificationReviews  VerificationRequest[] @relation("VerificationReviewer")
+  reportsFiled         Report[]              @relation("ReportReporter")
+  reportsAgainst       Report[]              @relation("ReportTarget")
+  postLikes            PostLike[]
+  postComments         PostComment[]
+  favorites            Favorite[]            @relation("FavoriteClient")
+}
+
+model RefreshToken {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  tokenHash  String    @db.VarChar(255)
+  deviceName String?   @db.VarChar(255)
+  ipAddress  String?   @db.VarChar(100)
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model EngineerProfile {
+  id                 Int                     @id @default(autoincrement())
+  userId             Int                     @unique
+  specialization     EngineerSpecialization?
+  bio                String?                 @db.Text
+  yearsOfExperience  Int?
+  availabilityStatus AvailabilityStatus?
+  hourlyRate         Decimal?                @db.Decimal(10, 2)
+  location           String?                 @db.VarChar(255)
+  tuVerified         Boolean?
+  ratingAverage      Decimal?                @db.Decimal(3, 2)
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  user             User                 @relation(fields: [userId], references: [id])
+  experiences      EngineerExperience[]
+  portfolios       EngineerPortfolio[]
+  teamMemberships  TeamMember[]
+  projectResponses ProjectResponse[]
+  selectedProjects Project[]            @relation("ProjectSelectedEngineer")
+  favorites        Favorite[]
+}
+
+model EngineerExperience {
+  id                Int       @id @default(autoincrement())
+  engineerProfileId Int
+  companyName       String?   @db.VarChar(255)
+  position          String?   @db.VarChar(255)
+  description       String?   @db.Text
+  startDate         DateTime? @db.Date
+  endDate           DateTime? @db.Date
+
+  engineerProfile EngineerProfile @relation(fields: [engineerProfileId], references: [id])
+}
+
+model EngineerPortfolio {
+  id                Int       @id @default(autoincrement())
+  engineerProfileId Int
+  title             String?   @db.VarChar(255)
+  overview          String?   @db.Text
+  description       String?   @db.Text
+  imageUrl          String?   @db.VarChar(500)
+  projectLink       String?   @db.VarChar(500)
+  startDate         DateTime? @db.Date
+  endDate           DateTime? @db.Date
+  createdAt         DateTime  @default(now())
+
+  engineerProfile EngineerProfile @relation(fields: [engineerProfileId], references: [id])
+}
+
+model TeamProfile {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @unique
+  companyName   String?  @db.VarChar(255)
+  description   String?  @db.Text
+  website       String?  @db.VarChar(500)
+  location      String?  @db.VarChar(255)
+  verified      Boolean?
+  ratingAverage Decimal? @db.Decimal(3, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id])
+  teamMembers      TeamMember[]
+  projectResponses ProjectResponse[]
+  selectedProjects Project[]         @relation("ProjectSelectedTeam")
+}
+
+model TeamMember {
+  id                Int                       @id @default(autoincrement())
+  teamProfileId     Int
+  engineerProfileId Int
+  roleInTeam        String?                   @db.VarChar(100)
+  approvalStatus    TeamMemberApprovalStatus?
+  joinedAt          DateTime?
+  leftAt            DateTime?
+
+  teamProfile     TeamProfile     @relation(fields: [teamProfileId], references: [id])
+  engineerProfile EngineerProfile @relation(fields: [engineerProfileId], references: [id])
+}
+
+model Project {
+  id                 Int                    @id @default(autoincrement())
+  clientId           Int
+  title              String?                @db.VarChar(255)
+  description        String?                @db.Text
+  imageUrl           String?                @db.VarChar(500)
+  budgetMin          Decimal?               @db.Decimal(12, 2)
+  budgetMax          Decimal?               @db.Decimal(12, 2)
+  location           String?                @db.VarChar(255)
+  visibility         ProjectVisibility?
+  assignmentType     ProjectAssignmentType?
+  status             ProjectStatus?
+  selectedEngineerId Int?
+  selectedTeamId     Int?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  client           User              @relation("ProjectClient", fields: [clientId], references: [id])
+  selectedEngineer EngineerProfile?  @relation("ProjectSelectedEngineer", fields: [selectedEngineerId], references: [id])
+  selectedTeam     TeamProfile?      @relation("ProjectSelectedTeam", fields: [selectedTeamId], references: [id])
+  responses        ProjectResponse[]
+  contracts        Contract[]
+  ratings          Rating[]
+}
+
+model ProjectResponse {
+  id                Int                    @id @default(autoincrement())
+  projectId         Int
+  engineerProfileId Int?
+  teamProfileId     Int?
+  responseType      ProjectResponseType?
+  status            ProjectResponseStatus?
+  message           String?                @db.Text
+  proposedPrice     Decimal?               @db.Decimal(12, 2)
+  createdAt         DateTime               @default(now())
+
+  project         Project          @relation(fields: [projectId], references: [id])
+  engineerProfile EngineerProfile? @relation(fields: [engineerProfileId], references: [id])
+  teamProfile     TeamProfile?     @relation(fields: [teamProfileId], references: [id])
+}
+
+model Contract {
+  id        Int             @id @default(autoincrement())
+  projectId Int
+  title     String?         @db.VarChar(255)
+  scope     String?         @db.Text
+  startDate DateTime?       @db.Date
+  endDate   DateTime?       @db.Date
+  status    ContractStatus?
+  createdAt DateTime        @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+}
+
+model Rating {
+  id           Int      @id @default(autoincrement())
+  projectId    Int
+  reviewerId   Int
+  targetUserId Int
+  score        Int?
+  comment      String?  @db.Text
+  createdAt    DateTime @default(now())
+
+  project  Project @relation(fields: [projectId], references: [id])
+  reviewer User    @relation("RatingReviewer", fields: [reviewerId], references: [id])
+  target   User    @relation("RatingTarget", fields: [targetUserId], references: [id])
+}
+
+model Post {
+  id         Int             @id @default(autoincrement())
+  userId     Int
+  content    String?         @db.Text
+  imageUrl   String?         @db.VarChar(500)
+  visibility PostVisibility?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id])
+  postStat PostStat?
+  likes    PostLike[]
+  comments PostComment[]
+}
+
+model PostStat {
+  postId        Int      @id
+  viewsCount    Int?
+  likesCount    Int?
+  commentsCount Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  post Post @relation(fields: [postId], references: [id])
+}
+
+model PostLike {
   id        Int      @id @default(autoincrement())
-  email     String   @unique
-  phone     String   @unique
-  password  String
-  fullName  String
-  role      role
+  postId    Int
+  userId    Int
   createdAt DateTime @default(now())
 
-  userProfile     userProfile?
-  engineerProfile engineerProfile?
-  teamProfile     teamProfile?
+  post Post @relation(fields: [postId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 }
 
-model userProfile {
-  id Int @id @default(autoincrement())
-
-  userId Int   @unique
-  user   Users @relation(fields: [userId], references: [id])
-
-  requests projectRequests[]
-
+model PostComment {
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  userId    Int
+  comment   String?  @db.Text
   createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 }
 
-model engineerProfile {
-  id               Int            @id @default(autoincrement())
-  specialization   specialization
-  availability     availability
-  bio              String
-  yearOfExperience Int
-  isVerified       Boolean
+model VerificationRequest {
+  id               Int                 @id @default(autoincrement())
+  userId           Int
+  documentUrl      String?             @db.VarChar(500)
+  verificationType VerificationType?
+  status           VerificationStatus?
+  reviewedBy       Int?
+  createdAt        DateTime            @default(now())
+  reviewedAt       DateTime?
 
-  userId Int   @unique
-  user   Users @relation(fields: [userId], references: [id])
-
-  experience        engineerExperience[]
-  projects          engineerProjects[]
-  teamMembers       teamMembers[]
-  projectAssignment projectAssignment[]
-
-  createdAt DateTime @default(now())
+  requester User  @relation("VerificationRequester", fields: [userId], references: [id])
+  reviewer  User? @relation("VerificationReviewer", fields: [reviewedBy], references: [id])
 }
 
-model engineerExperience {
-  id          Int    @id @default(autoincrement())
-  companyName String
-  position    String
-  description String
+model Report {
+  id           Int           @id @default(autoincrement())
+  reporterId   Int
+  targetUserId Int
+  reason       String?       @db.Text
+  status       ReportStatus?
+  createdAt    DateTime      @default(now())
 
-  profileId Int
-  profile   engineerProfile @relation(fields: [profileId], references: [id])
+  reporter User @relation("ReportReporter", fields: [reporterId], references: [id])
+  target   User @relation("ReportTarget", fields: [targetUserId], references: [id])
 }
 
-model engineerProjects {
-  id       Int    @id @default(autoincrement())
-  title    String
-  overview String
+model Favorite {
+  id                Int      @id @default(autoincrement())
+  clientId          Int
+  engineerProfileId Int
+  createdAt         DateTime @default(now())
 
-  profileId Int
-  profile   engineerProfile @relation(fields: [profileId], references: [id])
-}
-
-model teamProfile {
-  id          Int    @id @default(autoincrement())
-  companyName String
-  description String
-
-  userId Int   @unique
-  user   Users @relation(fields: [userId], references: [id])
-
-  teamMembers       teamMembers[]
-  projectAssignment projectAssignment[]
-
-  createdAt DateTime @default(now())
-}
-
-model teamMembers {
-  id       Int      @id @default(autoincrement())
-  joinedAt DateTime
-
-  teamProfile Int
-  profileTeam teamProfile @relation(fields: [teamProfile], references: [id])
-
-  engineerProfile Int
-  profileEngineer engineerProfile @relation(fields: [engineerProfile], references: [id])
-}
-
-model projectRequests {
-  id          Int           @id @default(autoincrement())
-  title       String
-  budget      Decimal
-  status      projectStatus
-  description String
-
-  userProfileId Int
-  userProfile   userProfile @relation(fields: [userProfileId], references: [id])
-}
-
-model projectAssignment {
-  id     Int           @id @default(autoincrement())
-  status projectStatus
-
-  teamProfile Int
-  profileTeam teamProfile @relation(fields: [teamProfile], references: [id])
-
-  engineerProfile Int
-  profileEngineer engineerProfile @relation(fields: [engineerProfile], references: [id])
+  client          User            @relation("FavoriteClient", fields: [clientId], references: [id])
+  engineerProfile EngineerProfile @relation(fields: [engineerProfileId], references: [id])
 }
