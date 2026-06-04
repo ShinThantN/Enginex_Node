@@ -145,6 +145,7 @@ model EngineerProfile {
   userId             Int                     @unique
   specialization     EngineerSpecialization?
   bio                String?                 @db.Text
+  avatarUrl          String?                 @db.VarChar(500)
   yearsOfExperience  Int?
   availabilityStatus AvailabilityStatus?
   hourlyRate         Decimal?                @db.Decimal(10, 2)
