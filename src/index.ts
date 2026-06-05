@@ -1,7 +1,11 @@
 import express from "express";
+import routes from "./routes/index.ts";
 
 const app = express();
-app.get("/", (_req, res) => {
+
+app.use("/v1/api", routes);
+
+app.get("/health", (_req, res) => {
   res.send("Api is healthy and running!");
 });
 
