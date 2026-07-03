@@ -1,34 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { registerUserService, loginUserService } from './auth.service.js';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { loginUserService, registerUserService, setAuthPrismaForTests } from './auth.service.js';
+import { Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-
-jest.mock('@prisma/client', () => {
-  const mPrismaClient = {
-    user: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-    },
-  };
-  
-  class MockPrismaClientKnownRequestError extends Error {
-    code: string;
-
-    constructor(message: string, params: { code: string }) {
-      super(message);
-      this.code = params.code;
-    }
-  }
-  
-  return {
-    PrismaClient: jest.fn(() => mPrismaClient),
-    Prisma: {
-      PrismaClientKnownRequestError: MockPrismaClientKnownRequestError,
-    },
-  };
-});
-
-jest.mock('bcryptjs');
 
 type AsyncMock<T> = jest.Mock<(...args: unknown[]) => Promise<T>>;
 
@@ -39,13 +12,39 @@ type MockPrismaClient = {
   };
 };
 
-const prisma = new PrismaClient() as unknown as MockPrismaClient;
+const mockPrisma: MockPrismaClient = {
+  user: {
+    create: jest.fn(),
+    findUnique: jest.fn(),
+  },
+};
+
+jest.mock('@prisma/client', () => {
+  class MockPrismaClientKnownRequestError extends Error {
+    code: string;
+
+    constructor(message: string, params: { code: string }) {
+      super(message);
+      this.code = params.code;
+    }
+  }
+  
+  return {
+    Prisma: {
+      PrismaClientKnownRequestError: MockPrismaClientKnownRequestError,
+    },
+  };
+});
+
+jest.mock('bcryptjs');
+
 const mockBcryptHash = bcrypt.hash as unknown as AsyncMock<string>;
 const mockBcryptCompare = bcrypt.compare as unknown as AsyncMock<boolean>;
 
 describe('Auth Service Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    setAuthPrismaForTests(mockPrisma as never);
   });
 
   describe('registerUserService', () => {
@@ -55,13 +54,13 @@ describe('Auth Service Tests', () => {
       const mockSavedUser = { id: 1, fullName: 'Thura', email: 'thura@gmail.com', role: 'CLIENT' };
 
       mockBcryptHash.mockResolvedValue(mockHashedPassword);
-      prisma.user.create.mockResolvedValue(mockSavedUser);
+      mockPrisma.user.create.mockResolvedValue(mockSavedUser);
 
       const result = await registerUserService(mockUserData);
 
       expect(bcrypt.hash).toHaveBeenCalledWith('password123', 10);
-      expect(prisma.user.create).toHaveBeenCalledTimes(1);
-      expect(prisma.user.create).toHaveBeenCalledWith({
+      expect(mockPrisma.user.create).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.user.create).toHaveBeenCalledWith({
         data: {
           fullName: 'Thura',
           email: 'thura@gmail.com',
@@ -84,7 +83,7 @@ describe('Auth Service Tests', () => {
         code: 'P2002',
         clientVersion: 'test',
       });
-      prisma.user.create.mockRejectedValue(prismaError);
+      mockPrisma.user.create.mockRejectedValue(prismaError);
 
       await expect(registerUserService(mockUserData)).rejects.toThrow(
         expect.objectContaining({
@@ -97,7 +96,7 @@ describe('Auth Service Tests', () => {
 
   describe('loginUserService', () => {
     it('should throw 401 error if user is not found', async () => {
-      prisma.user.findUnique.mockResolvedValue(null);
+      mockPrisma.user.findUnique.mockResolvedValue(null);
 
       const loginData = { email: 'wrong@gmail.com', password: 'password123' };
 
@@ -117,7 +116,7 @@ describe('Auth Service Tests', () => {
         passwordHash: '$2a$10$hashedpassword123',
         role: 'USER',
       };
-      prisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
       mockBcryptCompare.mockResolvedValue(false);
 
       const loginData = { email: 'thura@gmail.com', password: 'wrongpassword' };
@@ -138,7 +137,7 @@ describe('Auth Service Tests', () => {
         passwordHash: '$2a$10$hashedpassword123',
         role: 'CLIENT',
       };
-      prisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
       mockBcryptCompare.mockResolvedValue(true);
 
       const loginData = { email: 'thura@gmail.com', password: 'password123' };

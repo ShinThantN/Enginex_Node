@@ -38,10 +38,6 @@ jest.mock('./auth.service.js', () => ({
   },
   registerUserService: jest.fn(),
   loginUserService: jest.fn(),
-  getUserByIdService: jest.fn(),
-  getAllUsersService: jest.fn(),
-  updateUserService: jest.fn(),
-  deleteUserService: jest.fn(),
   refreshTokenService: jest.fn(),
   generateToken: jest.fn(() => 'mock-access-token'),
 }));
@@ -86,7 +82,6 @@ describe('Auth Controller Tests', () => {
     it('should return 201 and user data on successful registration', async () => {
       const mockUser = { id: 1, fullName: 'Thura', email: 'thura@gmail.com', role: 'CLIENT' };
       (authService.registerUserService as unknown as AsyncMock<typeof mockUser>).mockResolvedValue(mockUser);
-      (authService.getUserByIdService as unknown as AsyncMock<typeof mockUser>).mockResolvedValue(mockUser);
 
       const res = await request(app)
         .post('/api/auth/register')
