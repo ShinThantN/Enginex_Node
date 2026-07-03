@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "../../../generated/prisma/client.ts";
-import { env } from "../../config/env.ts";
+import { env } from "../../config/env.js";
 
 const adapter = new PrismaMariaDb({
   host: env.MYSQL_HOST,
