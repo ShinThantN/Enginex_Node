@@ -1,4 +1,4 @@
-import { prisma } from "../../shared/config/prisma.ts";
+import { prisma } from "../../shared/config/index.ts";
 import type {
   UpdateProfileInput,
   SearchQueryInput,
@@ -45,7 +45,16 @@ export async function updateClientProfile(
         },
       },
     },
-    include: { clientProfile: true },
+    select: {
+      id: true,
+      email: true,
+      fullName: true,
+      phone: true,
+      profileImage: true,
+      status: true,
+      role: true,
+      clientProfile: true,
+    },
   });
 }
 
@@ -136,10 +145,7 @@ export async function getTeamProfile(id: number) {
   });
 }
 
-export async function saveFavorite(
-  userId: number,
-  engineerProfileId: number,
-) {
+export async function saveFavorite(userId: number, engineerProfileId: number) {
   const engineerProfile = await prisma.engineerProfile.findUnique({
     where: { id: engineerProfileId },
   });

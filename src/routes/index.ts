@@ -10,7 +10,7 @@ const app = express();
 const router = express.Router();
 router.use("/admin", adminRoutes);
 router.use("/auth", authRoutes);
-router.use("/client", clientRoutes);
+router.use("/clients", clientRoutes);
 router.use("/engineers", engineersRoutes);
 router.use("/feed", feedRoutes);
 router.use("/team", teamRoutes);
