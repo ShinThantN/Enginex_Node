@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
+import jwt from "jsonwebtoken";
 import { prisma } from "../config/index.ts";
-import { AppError, verifyAccessToken } from "../../modules/auth/auth.service.ts";
 
 const getBearerToken = (req: Request): string | null => {
   const authorization = req.headers.authorization;
@@ -26,7 +26,22 @@ export async function authenticateUser(
   }
 
   try {
-    const userId = verifyAccessToken(token);
+    const decoded = jwt.verify(
+      token,
+      process.env["ACCESS_TOKEN_SECRET"] || "enginex_access_secret",
+    );
+
+    if (typeof decoded !== "object" || decoded === null || !("id" in decoded)) {
+      res.status(401).json({ error: "Invalid access token" });
+      return;
+    }
+
+    const userId = Number((decoded as { id: unknown }).id);
+
+    if (Number.isNaN(userId)) {
+      res.status(401).json({ error: "Invalid access token" });
+      return;
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -44,9 +59,7 @@ export async function authenticateUser(
     };
 
     next();
-  } catch (error) {
-    const message =
-      error instanceof AppError ? error.message : "Invalid or expired access token";
-    res.status(401).json({ error: message });
+  } catch {
+    res.status(401).json({ error: "Invalid or expired access token" });
   }
 }

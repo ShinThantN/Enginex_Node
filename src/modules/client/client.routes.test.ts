@@ -33,23 +33,6 @@ jest.mock("../../shared/middlewares/index.ts", () => ({
 
     res.status(401).json({ error: "Invalid or expired access token" });
   },
-  requireRole:
-    (...allowedRoles: string[]) =>
-    (req: express.Request, res: express.Response, next: express.NextFunction) => {
-      if (!req.user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-
-      if (!allowedRoles.includes(req.user.role)) {
-        res
-          .status(403)
-          .json({ error: `Forbidden: requires role ${allowedRoles.join(" or ")}` });
-        return;
-      }
-
-      next();
-    },
 }));
 
 jest.mock("./client.service.ts", () => ({
@@ -140,7 +123,7 @@ describe("Client Routes", () => {
       .set("Authorization", "Bearer valid-engineer-token");
 
     expect(res.status).toBe(403);
-    expect(res.body).toEqual({ error: "Forbidden: requires role CLIENT" });
+    expect(res.body).toEqual({ error: "Client access required" });
   });
 
   it("GET /api/clients/profile should return current profile for client", async () => {
