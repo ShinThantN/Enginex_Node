@@ -5,8 +5,8 @@ export const CreateUserSchema = z.object({
   email: z.string().email({ message: 'Please provide a valid email address' }),
   password: z.string().min(6, { message: 'password must be at least 6 characters long' }),
 
-  role: z.enum(['CLIENT', 'ENGINEER', 'COMPANY', 'SUPER_ADMIN'], {
-    message: 'Role must be CLIENT, ENGINEER, COMPANY, or SUPER_ADMIN',
+  role: z.enum(['CLIENT', 'ENGINEER', 'COMPANY'], {
+    message: 'Role must be CLIENT, ENGINEER, or COMPANY',
   }),
 });
 

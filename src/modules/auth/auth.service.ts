@@ -40,6 +40,30 @@ export const generateToken = (res: Response, userId: string): string => {
   return accessToken;
 };
 
+export const verifyAccessToken = (token: string): number => {
+  let decoded: unknown;
+  try {
+    decoded = jwt.verify(
+      token,
+      process.env["ACCESS_TOKEN_SECRET"] || "enginex_access_secret",
+    );
+  } catch {
+    throw new AppError("Invalid or expired access token", 401);
+  }
+
+  if (typeof decoded !== "object" || decoded === null || !("id" in decoded)) {
+    throw new AppError("Invalid access token", 401);
+  }
+
+  const userId = Number((decoded as { id: unknown }).id);
+
+  if (Number.isNaN(userId)) {
+    throw new AppError("Invalid access token", 401);
+  }
+
+  return userId;
+};
+
 export const registerUserService = async (userData: any) => {
   const { name, email, password, role } = userData;
   const hashedPassword = await bcrypt.hash(password, 10);
