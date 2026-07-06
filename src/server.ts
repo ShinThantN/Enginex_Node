@@ -1,29 +1,17 @@
-
-import express from 'express';
-import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
-import authRouter from './modules/auth/auth.route.js';
-import { env } from './config/env.js';
-
-dotenv.config();
+import express from "express";
+import "dotenv/config";
+import routes from "./routes/index.ts";
 
 const app = express();
 
 app.use(express.json());
-app.use(cookieParser());
+app.use("/api", routes);
 
-// Auth Module Route ချိတ်ဆက်ခြင်း
-app.use('/api/auth', authRouter);
-
-// Global Error Handler (asyncHandler မှ တက်လာမည့် error များ ဖမ်းရန်)
-app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-  });
+app.get("/health", (_req, res) => {
+  res.send("Api is healthy and running!");
 });
 
-const PORT = env.PORT;
+const PORT = process.env["PORT"] ? parseInt(process.env["PORT"], 10) : 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
