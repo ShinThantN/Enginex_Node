@@ -100,16 +100,20 @@ enum PostVisibility {
 }
 
 model User {
-  id           Int        @id @default(autoincrement())
-  email        String     @unique @db.VarChar(255)
-  passwordHash String     @db.VarChar(255)
-  fullName     String     @db.VarChar(255)
-  phone        String?    @db.VarChar(50)
-  role         UserRole
-  profileImage String?    @db.VarChar(500)
-  status       UserStatus
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id            Int        @id @default(autoincrement())
+  email         String     @unique @db.VarChar(255)
+  passwordHash  String     @db.VarChar(255)
+  fullName      String     @db.VarChar(255)
+  phone         String?    @db.VarChar(50)
+  role          UserRole
+  profileImage  String?    @db.VarChar(500)
+  status        UserStatus
+  emailVerified Boolean    @default(false)
+  otpHash       String?    @db.VarChar(255)
+  otpExpiresAt  DateTime?
+  otpLastSentAt DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
   refreshTokens        RefreshToken[]
   engineerProfile      EngineerProfile?

@@ -2,6 +2,11 @@ import type { Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { Prisma, prisma } from "../../shared/config/prisma.ts";
+import {
+  issueOtp,
+  verifyOtp,
+  assertResendAllowed,
+} from "./otp.service.js";
 
 export class AppError extends Error {
   statusCode: number;
@@ -67,14 +72,17 @@ export const verifyAccessToken = (token: string): number => {
 export const registerUserService = async (userData: any) => {
   const { name, email, password, role } = userData;
   const hashedPassword = await bcrypt.hash(password, 10);
+
+  let user;
   try {
-    return await prisma.user.create({
+    user = await prisma.user.create({
       data: {
         fullName: name,
         email,
         passwordHash: hashedPassword,
         role,
-        status: "ACTIVE",
+        status: "PENDING_VERIFICATION",
+        emailVerified: false,
       },
       select: { id: true, fullName: true, email: true, role: true },
     });
@@ -87,6 +95,11 @@ export const registerUserService = async (userData: any) => {
     }
     throw error;
   }
+
+  // Send the verification OTP. The account stays unverified until confirmed.
+  await issueOtp({ id: user.id, email: user.email, fullName: user.fullName });
+
+  return user;
 };
 
 export const loginUserService = async (loginData: any) => {
@@ -100,12 +113,88 @@ export const loginUserService = async (loginData: any) => {
   const isMatch = await bcrypt.compare(password, user.passwordHash);
   if (!isMatch) throw new AppError("Invalid Email or Password", 401);
 
+  if (!user.emailVerified) {
+    throw new AppError(
+      "Email not verified. Please verify your email to continue.",
+      403,
+    );
+  }
+
   return {
     id: user.id,
     fullName: user.fullName,
     email: user.email,
     role: user.role,
   };
+};
+
+/**
+ * Verify a submitted OTP and, on success, mark the email as verified.
+ *
+ * The email-verified flag and OTP invalidation are written together in a single
+ * atomic update so a consumed code cannot be replayed.
+ */
+export const verifyEmailService = async (verifyData: any) => {
+  const { email, otp } = verifyData;
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: {
+      id: true,
+      emailVerified: true,
+      otpHash: true,
+      otpExpiresAt: true,
+    },
+  });
+
+  if (!user) throw new AppError("User not found", 404);
+  if (user.emailVerified) throw new AppError("Email is already verified", 409);
+
+  await verifyOtp({
+    otp,
+    otpHash: user.otpHash,
+    otpExpiresAt: user.otpExpiresAt,
+  });
+
+  const verified = await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      emailVerified: true,
+      status: "ACTIVE",
+      otpHash: null,
+      otpExpiresAt: null,
+      otpLastSentAt: null,
+    },
+    select: { id: true, fullName: true, email: true, role: true },
+  });
+
+  return verified;
+};
+
+/**
+ * Issue a fresh OTP for an unverified account, honouring the resend cooldown
+ * and replacing any previously issued code.
+ */
+export const resendOtpService = async (resendData: any) => {
+  const { email } = resendData;
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: {
+      id: true,
+      email: true,
+      fullName: true,
+      emailVerified: true,
+      otpLastSentAt: true,
+    },
+  });
+
+  if (!user) throw new AppError("User not found", 404);
+  if (user.emailVerified) throw new AppError("Email is already verified", 409);
+
+  assertResendAllowed(user.otpLastSentAt);
+
+  await issueOtp({ id: user.id, email: user.email, fullName: user.fullName });
 };
 
 export const refreshTokenService = async (token: string) => {
