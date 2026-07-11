@@ -1,0 +1,288 @@
+<!--
+  OTP verification email template.
+
+  Static presentation for the email-verification message. Rendered by
+  email.templates.ts, which substitutes the {{...}} placeholders with
+  per-recipient, HTML-escaped values before sending.
+
+  Placeholders:
+    {{name}}         Recipient's display name (HTML-escaped)
+    {{otp}}          The one-time code (HTML-escaped)
+    {{expiryText}}   e.g. "10 minutes" (HTML-escaped)
+    {{verifyUrl}}    Destination for the "Verify email address" button
+
+  The logo is sent as an inline CID attachment (see email.templates.ts) rather
+  than a data URI, which Gmail and other webmail clients strip from img src.
+
+  Layout is table-based with inline styles for broad client support. Figma's
+  flex/gap is translated to fixed cell padding and spacer rows, since no email
+  client supports flexbox. Space Grotesk and JetBrains Mono are requested by
+  name and degrade to sans-serif / monospace: Gmail strips @font-face, so
+  webfonts cannot be relied on.
+
+  THE HARD DROP SHADOWS ARE BUILT FROM TABLE CELLS, NOT box-shadow: Gmail and
+  Outlook both strip box-shadow, which flattens the neubrutalist look. Each
+  shadowed box is wrapped in a 2x2 grid whose right strip, bottom strip and
+  corner square are filled with the shadow colour. The strips are notched by
+  the offset using a spacer cell painted in the PARENT's background colour --
+  so if you change the colour behind a box, update its notch cells to match.
+-->
+<table
+  role="presentation"
+  cellpadding="0"
+  cellspacing="0"
+  width="100%"
+  style="background-color: #eef0f4; margin: 0; padding: 24px 12px; font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;"
+>
+  <tr>
+    <td align="center">
+      <!-- Card shadow grid: 8px offset, #000000, notched against #eef0f4 -->
+      <table
+        role="presentation"
+        cellpadding="0"
+        cellspacing="0"
+        width="624"
+        style="width: 624px; max-width: 100%; border-collapse: collapse;"
+      >
+        <tr>
+          <td valign="top">
+            <table
+              role="presentation"
+              cellpadding="0"
+              cellspacing="0"
+              width="616"
+              style="width: 616px; max-width: 100%; background-color: #ffffff; border: 3px solid #1a1c1c;"
+            >
+              <!-- Header band with logo -->
+              <tr>
+                <td
+                  align="center"
+                  style="background-color: #7ea6ff; padding: 28px 24px; border-bottom: 3px solid #1a1c1c;"
+                >
+                  <!-- Logo shadow grid: 5px offset, #1a1c1c, notched against #7ea6ff -->
+                  <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                    <tr>
+                      <td valign="top">
+                        <table role="presentation" cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td
+                              style="background-color: #ffffff; border: 3px solid #1a1c1c; padding: 8px; line-height: 0;"
+                            >
+                              <img
+                                src="cid:enginex-logo"
+                                width="64"
+                                height="64"
+                                alt="Enginex"
+                                style="display: block; width: 64px; height: 64px;"
+                              />
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td width="5" bgcolor="#1a1c1c" style="width: 5px; font-size: 0; line-height: 0;">
+                        <div style="height: 5px; background-color: #7ea6ff; font-size: 0; line-height: 0;">&nbsp;</div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td height="5" style="height: 5px; font-size: 0; line-height: 0;">
+                        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+                          <tr>
+                            <td width="5" bgcolor="#7ea6ff" style="width: 5px; height: 5px; font-size: 0; line-height: 0;">&nbsp;</td>
+                            <td bgcolor="#1a1c1c" style="height: 5px; font-size: 0; line-height: 0;">&nbsp;</td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td width="5" height="5" bgcolor="#1a1c1c" style="width: 5px; height: 5px; font-size: 0; line-height: 0;">&nbsp;</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <!-- Main content area: 24px padding, 568px inner width -->
+              <tr>
+                <td style="padding: 24px;">
+                  <!-- Header: heading + 4px gap + accent bar -->
+                  <p
+                    style="margin: 0; font-family: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif; font-size: 16px; line-height: 24px; font-weight: 700; letter-spacing: -0.4px; color: #1a1c1c; text-transform: uppercase;"
+                  >
+                    Confirm your email
+                  </p>
+                  <div
+                    style="width: 96px; height: 8px; box-sizing: border-box; background-color: #fbe27c; border: 2px solid #1a1c1c; margin: 4px 0 0; font-size: 0; line-height: 0;"
+                  >&nbsp;</div>
+
+                  <!-- Section body: 24px gap between blocks -->
+                  <p style="margin: 24px 0 0; font-size: 16px; line-height: 24px; color: #1a1c1c;">
+                    Hi {{name}},
+                  </p>
+
+                  <p style="margin: 24px 0 0; font-size: 16px; line-height: 24px; color: #1a1c1c;">
+                    Welcome to Enginex. Use the verification code below to confirm
+                    your email address and unlock access to the digital workshop.
+                  </p>
+
+                  <!-- Code box shadow grid: 8px offset, #000000, notched against #ffffff -->
+                  <table
+                    role="presentation"
+                    cellpadding="0"
+                    cellspacing="0"
+                    width="100%"
+                    style="margin: 28px 0 0; border-collapse: collapse;"
+                  >
+                    <tr>
+                      <td valign="top">
+                        <table
+                          role="presentation"
+                          cellpadding="0"
+                          cellspacing="0"
+                          width="100%"
+                          style="background-color: #ffffff; border: 4px solid #1a1c1c;"
+                        >
+                          <tr>
+                            <td align="center" style="padding: 32px 48px;">
+                              <p style="margin: 0; font-size: 16px; line-height: 24px; color: #434752; text-transform: uppercase;">
+                                Verification code
+                              </p>
+                              <p
+                                style="margin: 12px 0 0; padding: 12px 0; font-family: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif; font-size: 48px; line-height: 24px; font-weight: 700; letter-spacing: 1.6px; color: #2f5baf;"
+                              >
+                                {{otp}}
+                              </p>
+
+                              <!-- Copy button shadow grid: 4px offset, #000000, notched against #ffffff -->
+                              <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin: 12px auto 0; border-collapse: collapse;">
+                                <tr>
+                                  <td valign="top">
+                                    <table role="presentation" cellpadding="0" cellspacing="0">
+                                      <tr>
+                                        <td
+                                          style="background-color: #fbe27c; border: 4px solid #1a1c1c; padding: 4px 24px; font-size: 16px; line-height: 24px; color: #1a1c1c; text-transform: uppercase; white-space: nowrap;"
+                                        >
+                                          &#128203;&nbsp;Copy
+                                        </td>
+                                      </tr>
+                                    </table>
+                                  </td>
+                                  <td width="4" bgcolor="#000000" style="width: 4px; font-size: 0; line-height: 0;">
+                                    <div style="height: 4px; background-color: #ffffff; font-size: 0; line-height: 0;">&nbsp;</div>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td height="4" style="height: 4px; font-size: 0; line-height: 0;">
+                                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+                                      <tr>
+                                        <td width="4" bgcolor="#ffffff" style="width: 4px; height: 4px; font-size: 0; line-height: 0;">&nbsp;</td>
+                                        <td bgcolor="#000000" style="height: 4px; font-size: 0; line-height: 0;">&nbsp;</td>
+                                      </tr>
+                                    </table>
+                                  </td>
+                                  <td width="4" height="4" bgcolor="#000000" style="width: 4px; height: 4px; font-size: 0; line-height: 0;">&nbsp;</td>
+                                </tr>
+                              </table>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td width="8" bgcolor="#000000" style="width: 8px; font-size: 0; line-height: 0;">
+                        <div style="height: 8px; background-color: #ffffff; font-size: 0; line-height: 0;">&nbsp;</div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td height="8" style="height: 8px; font-size: 0; line-height: 0;">
+                        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+                          <tr>
+                            <td width="8" bgcolor="#ffffff" style="width: 8px; height: 8px; font-size: 0; line-height: 0;">&nbsp;</td>
+                            <td bgcolor="#000000" style="height: 8px; font-size: 0; line-height: 0;">&nbsp;</td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td width="8" height="8" bgcolor="#000000" style="width: 8px; height: 8px; font-size: 0; line-height: 0;">&nbsp;</td>
+                    </tr>
+                  </table>
+
+                  <!-- Link action button shadow grid: 4px offset, #000000, notched against #ffffff -->
+                  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin: 24px 0 0; border-collapse: collapse;">
+                    <tr>
+                      <td valign="top">
+                        <a
+                          href="{{verifyUrl}}"
+                          target="_blank"
+                          style="display: block; box-sizing: border-box; background-color: #7ea6ff; border: 2px solid #1a1c1c; padding: 12px 24px; text-align: center; font-family: 'JetBrains Mono', 'Courier New', Courier, monospace; font-size: 16px; line-height: 24px; color: #003986; text-decoration: none; text-transform: uppercase;"
+                        >
+                          &#128274;&nbsp;&nbsp;Verify email address
+                        </a>
+                      </td>
+                      <td width="4" bgcolor="#000000" style="width: 4px; font-size: 0; line-height: 0;">
+                        <div style="height: 4px; background-color: #ffffff; font-size: 0; line-height: 0;">&nbsp;</div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td height="4" style="height: 4px; font-size: 0; line-height: 0;">
+                        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+                          <tr>
+                            <td width="4" bgcolor="#ffffff" style="width: 4px; height: 4px; font-size: 0; line-height: 0;">&nbsp;</td>
+                            <td bgcolor="#000000" style="height: 4px; font-size: 0; line-height: 0;">&nbsp;</td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td width="4" height="4" bgcolor="#000000" style="width: 4px; height: 4px; font-size: 0; line-height: 0;">&nbsp;</td>
+                    </tr>
+                  </table>
+
+                  <!-- Note: expiry / ignore notice (flat by design, no shadow) -->
+                  <table
+                    role="presentation"
+                    cellpadding="0"
+                    cellspacing="0"
+                    width="100%"
+                    style="margin: 24px 0 0; box-sizing: border-box; background-color: #eeeeee; border: 2px solid #1a1c1c;"
+                  >
+                    <tr>
+                      <td valign="top" style="padding: 12px 0 12px 12px; font-size: 16px; line-height: 24px;">
+                        &#9888;&#65039;
+                      </td>
+                      <td style="padding: 12px; font-size: 16px; line-height: 24px; color: #434752;">
+                        This code expires in {{expiryText}}. If you did not create an
+                        Enginex account, you can safely ignore this email.
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- Footer sign-off: 24px margin, 2px rule, 24px padding, right aligned -->
+                  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin: 24px 0 0;">
+                    <tr>
+                      <td align="right" style="border-top: 2px solid #1a1c1c; padding: 24px 0 0;">
+                        <p style="margin: 0; font-size: 16px; line-height: 24px; color: #434752; text-transform: uppercase;">
+                          Issued by
+                        </p>
+                        <p
+                          style="margin: 0; font-family: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif; font-size: 16px; line-height: 24px; font-weight: 400; color: #1a1c1c;"
+                        >
+                          &mdash; The Enginex Team
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+          <td width="8" bgcolor="#000000" style="width: 8px; font-size: 0; line-height: 0;">
+            <div style="height: 8px; background-color: #eef0f4; font-size: 0; line-height: 0;">&nbsp;</div>
+          </td>
+        </tr>
+        <tr>
+          <td height="8" style="height: 8px; font-size: 0; line-height: 0;">
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+              <tr>
+                <td width="8" bgcolor="#eef0f4" style="width: 8px; height: 8px; font-size: 0; line-height: 0;">&nbsp;</td>
+                <td bgcolor="#000000" style="height: 8px; font-size: 0; line-height: 0;">&nbsp;</td>
+              </tr>
+            </table>
+          </td>
+          <td width="8" height="8" bgcolor="#000000" style="width: 8px; height: 8px; font-size: 0; line-height: 0;">&nbsp;</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>

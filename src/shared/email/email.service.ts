@@ -10,6 +10,7 @@
 import { Resend } from "resend";
 import { AppError } from "../utils/utils.ts";
 import { buildOtpVerificationEmail } from "./email.templates.ts";
+import type { InlineAttachment } from "./email.templates.ts";
 
 const EMAIL_FROM =
   process.env["EMAIL_FROM"] ?? "Enginex <onboarding@resend.dev>";
@@ -36,6 +37,8 @@ export interface SendEmailParams {
   to: string;
   subject: string;
   html: string;
+  /** Inline images referenced from the HTML as `cid:<contentId>`. */
+  attachments?: InlineAttachment[];
 }
 
 /**
@@ -50,6 +53,9 @@ export const sendEmail = async (params: SendEmailParams): Promise<void> => {
     to: params.to,
     subject: params.subject,
     html: params.html,
+    ...(params.attachments?.length
+      ? { attachments: params.attachments }
+      : {}),
   });
 
   if (error) {
@@ -71,11 +77,11 @@ export interface SendOtpEmailParams {
 export const sendOtpEmail = async (
   params: SendOtpEmailParams,
 ): Promise<void> => {
-  const { subject, html } = buildOtpVerificationEmail({
+  const { subject, html, attachments } = buildOtpVerificationEmail({
     name: params.name,
     otp: params.otp,
     expiryMinutes: params.expiryMinutes,
   });
 
-  await sendEmail({ to: params.to, subject, html });
+  await sendEmail({ to: params.to, subject, html, attachments });
 };
