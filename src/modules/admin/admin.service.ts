@@ -1,6 +1,6 @@
-import { Prisma } from '@prisma/client';
-import { prisma } from '../../shared/config/index.js';
-import { AppError } from '../auth/auth.service.js';
+import { Prisma } from '../../../generated/prisma/client.ts';
+import { prisma } from '../../shared/config/prisma.ts';
+import { AppError } from '../../shared/utils/utils.ts';
 
 export const getAllUsersService = async (page: number, limit: number) => {
   const skip = (page - 1) * limit;

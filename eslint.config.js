@@ -11,8 +11,10 @@ export default [
       ecmaVersion: 2020,
       sourceType: 'module',
       globals: {
+        Buffer: 'readonly',
         console: 'readonly',
         process: 'readonly',
+        URL: 'readonly',
       },
     },
     plugins: {
