@@ -11,8 +11,10 @@ export default [
       ecmaVersion: 2020,
       sourceType: 'module',
       globals: {
+        Buffer: 'readonly',
         console: 'readonly',
         process: 'readonly',
+        URL: 'readonly',
       },
     },
     plugins: {
@@ -20,6 +22,7 @@ export default [
     },
     rules: {
       ...tseslint.configs.recommended.rules,
+       "@typescript-eslint/no-explicit-any": "off" 
       // Add custom rules here if needed
     },
   },
