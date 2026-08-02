@@ -5,6 +5,7 @@ import clientRoutes from "../modules/client/client.routes.ts";
 import engineersRoutes from "../modules/engineers/engineers.routes.ts";
 import { postsRouter, commentsRouter } from "../modules/feed/feed.routes.ts";
 import teamRoutes from "../modules/team/team.routes.ts";
+import uploadRoutes from "../modules/upload/upload.routes.ts";
 
 const app = express();
 const router = express.Router();
@@ -15,6 +16,7 @@ router.use("/comments", commentsRouter);
 router.use("/engineers", engineersRoutes);
 router.use("/posts", postsRouter);
 router.use("/team", teamRoutes);
+router.use("/uploads", uploadRoutes);
 
 app.use(router);
 
