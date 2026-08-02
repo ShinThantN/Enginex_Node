@@ -14,6 +14,11 @@ const router = express.Router();
 router.get("/", (_req, res) => {
   res.send("Engineers route is working!");
 });
+
+// All engineer operations below require an authenticated user. Without this
+// middleware the controllers receive no `req.user` and fail when reading its id.
+router.use(authenticate);
+
 router.get("/profile", getEngineerProfile);
 router.put("/profile", updateEngineerProfile);
 router.patch("/profile", updateEngineerProfile);

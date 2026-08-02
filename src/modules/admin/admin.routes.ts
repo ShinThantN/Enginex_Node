@@ -3,7 +3,12 @@ import {
   authenticateUser,
   requireRole,
 } from "../../shared/middlewares/index.ts";
-
+import {
+  getAllUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
+} from "./admin.controller.ts";
 const router = express.Router();
 
 router.use(authenticateUser, requireRole("SUPER_ADMIN"));
