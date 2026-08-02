@@ -1,5 +1,6 @@
 import express from "express";
-import { authenticate } from "../../shared/middlewares/index.js";
+import { authenticateUser } from "../../shared/middlewares/auth.middleware.ts";
+import { requireRole } from "../../shared/middlewares/rbac.middleware.ts";
 import {
   applyToProject,
   getCompanies,
@@ -7,19 +8,20 @@ import {
   getEngineerProfile,
   updateEngineerProfile,
   updateEngineerStatus,
-} from "./engineers.controller.js";
+} from "./engineers.controller.ts";
 
 const router = express.Router();
 
+router.use(authenticateUser, requireRole("ENGINEER"));
 router.get("/", (_req, res) => {
   res.send("Engineers route is working!");
 });
-router.get("/profile", authenticate, getEngineerProfile);
-router.put("/profile", authenticate, updateEngineerProfile);
-router.patch("/profile", authenticate, updateEngineerProfile);
-router.put("/profile/status", authenticate, updateEngineerStatus);
-router.get("/direct-projects", authenticate, getDirectProjects);
-router.post("/projects/:id/apply", authenticate, applyToProject);
-router.get("/companies", authenticate, getCompanies);
+router.get("/profile", getEngineerProfile);
+router.put("/profile", updateEngineerProfile);
+router.patch("/profile", updateEngineerProfile);
+router.put("/profile/status", updateEngineerStatus);
+router.get("/direct-projects", getDirectProjects);
+router.post("/projects/:id/apply", applyToProject);
+router.get("/companies", getCompanies);
 
 export default router;

@@ -1,8 +1,11 @@
 import express from "express";
-import { deleteUser, getAllUsers, getUserById, updateUser } from "./admin.controller.js";
+import { authenticateUser } from "../../shared/middlewares/auth.middleware.ts";
+import { requireRole } from "../../shared/middlewares/rbac.middleware.ts";
+import { deleteUser, getAllUsers, getUserById, updateUser } from "./admin.controller.ts";
 
 const router = express.Router();
 
+router.use(authenticateUser, requireRole("SUPER_ADMIN"));
 router.get("/", (_req, res) => {
   res.send("Admin route is working!");
 });

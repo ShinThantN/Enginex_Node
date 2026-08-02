@@ -93,10 +93,6 @@ const companySelect = {
   teamProfile: true,
 } as const;
 
-const toDate = (value?: string) => {
-  return value ? new Date(value) : undefined;
-};
-
 const buildPortfolioCreateData = (
   engineerProfileId: number,
   portfolio: EngineerPortfolioInput
