@@ -2,7 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -99,16 +100,20 @@ enum PostVisibility {
 }
 
 model User {
-  id           Int        @id @default(autoincrement())
-  email        String     @unique @db.VarChar(255)
-  passwordHash String     @db.VarChar(255)
-  fullName     String     @db.VarChar(255)
-  phone        String?    @db.VarChar(50)
-  role         UserRole
-  profileImage String?    @db.VarChar(500)
-  status       UserStatus
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id            Int        @id @default(autoincrement())
+  email         String     @unique @db.VarChar(255)
+  passwordHash  String     @db.VarChar(255)
+  fullName      String     @db.VarChar(255)
+  phone         String?    @db.VarChar(50)
+  role          UserRole
+  profileImage  String?    @db.VarChar(500)
+  status        UserStatus
+  emailVerified Boolean    @default(false)
+  otpHash       String?    @db.VarChar(255)
+  otpExpiresAt  DateTime?
+  otpLastSentAt DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
   refreshTokens        RefreshToken[]
   engineerProfile      EngineerProfile?
@@ -306,18 +311,27 @@ model Rating {
 }
 
 model Post {
-  id         Int             @id @default(autoincrement())
-  userId     Int
-  content    String?         @db.Text
-  imageUrl   String?         @db.VarChar(500)
-  visibility PostVisibility?
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  id                    Int            @id @default(autoincrement())
+  userId                Int
+  title                 String         @db.VarChar(255)
+  content               String?        @db.Text
+  imageUrl              String?        @db.VarChar(500)
+  visibility            PostVisibility @default(PUBLIC)
+  likeCount             Int            @default(0)
+  commentCount          Int            @default(0)
+  offerCount            Int            @default(0)
+  acceptedContractCount Int            @default(0)
+  viralScore            Float          @default(0)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 
   user     User          @relation(fields: [userId], references: [id])
   postStat PostStat?
   likes    PostLike[]
   comments PostComment[]
+
+  @@index([createdAt])
+  @@index([viralScore])
 }
 
 model PostStat {
@@ -339,6 +353,8 @@ model PostLike {
 
   post Post @relation(fields: [postId], references: [id])
   user User @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
 }
 
 model PostComment {

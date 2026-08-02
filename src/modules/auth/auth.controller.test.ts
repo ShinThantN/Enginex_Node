@@ -1,7 +1,12 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
-import { registerUser, loginUser } from "./auth.controller.js";
+import {
+  registerUser,
+  loginUser,
+  verifyEmail,
+  resendOtp,
+} from "./auth.controller.js";
 import * as authService from "./auth.service.js";
 
 type AsyncMock<T> = jest.Mock<(...args: unknown[]) => Promise<T>>;
@@ -16,6 +21,8 @@ app.use(express.json());
 
 app.post("/api/auth/register", registerUser);
 app.post("/api/auth/login", loginUser);
+app.post("/api/auth/verify-email", verifyEmail);
+app.post("/api/auth/resend-otp", resendOtp);
 
 // Global error handler middleware
 app.use((err: TestError, _req: express.Request, res: express.Response) => {
@@ -39,6 +46,8 @@ jest.mock("./auth.service.js", () => ({
   registerUserService: jest.fn(),
   loginUserService: jest.fn(),
   refreshTokenService: jest.fn(),
+  verifyEmailService: jest.fn(),
+  resendOtpService: jest.fn(),
   generateToken: jest.fn(() => "mock-access-token"),
 }));
 
@@ -108,13 +117,13 @@ describe("Auth Controller Tests", () => {
 
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
-      expect(res.body.message).toBe("User Created Successfully");
-      expect(res.body.user).toEqual(mockUser);
-      expect(res.body.accessToken).toBe("mock-access-token");
-      expect(authService.generateToken).toHaveBeenCalledWith(
-        expect.any(Object),
-        "1",
+      expect(res.body.message).toBe(
+        "User Created Successfully. Please verify your email with the OTP we sent.",
       );
+      expect(res.body.user).toEqual(mockUser);
+      // Registration must not authenticate the user before email verification.
+      expect(res.body.accessToken).toBeUndefined();
+      expect(authService.generateToken).not.toHaveBeenCalled();
     });
   });
 
@@ -167,6 +176,100 @@ describe("Auth Controller Tests", () => {
       expect(authService.generateToken).toHaveBeenCalledWith(
         expect.any(Object),
         "1",
+      );
+    });
+  });
+
+  describe("POST /api/auth/verify-email", () => {
+    it("should return 422 if validation fails", async () => {
+      const res = await request(app)
+        .post("/api/auth/verify-email")
+        .send({ email: "thura@gmail.com", otp: "12" });
+
+      expect(res.status).toBe(422);
+      expect(res.body.message).toBe("Validation Failed");
+    });
+
+    it("should return 410 if the OTP has expired", async () => {
+      (
+        authService.verifyEmailService as unknown as AsyncMock<unknown>
+      ).mockRejectedValue(
+        new authService.AppError("Verification code has expired", 410),
+      );
+
+      const res = await request(app)
+        .post("/api/auth/verify-email")
+        .send({ email: "thura@gmail.com", otp: "123456" });
+
+      expect(res.status).toBe(410);
+      expect(res.body.message).toBe("Verification code has expired");
+    });
+
+    it("should return 200 and the verified user on success", async () => {
+      const mockUser = {
+        id: 1,
+        fullName: "Thura",
+        email: "thura@gmail.com",
+        role: "CLIENT",
+      };
+      (
+        authService.verifyEmailService as unknown as AsyncMock<typeof mockUser>
+      ).mockResolvedValue(mockUser);
+
+      const res = await request(app)
+        .post("/api/auth/verify-email")
+        .send({ email: "thura@gmail.com", otp: "123456" });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.message).toBe("Email Verified Successfully");
+      expect(res.body.user).toEqual(mockUser);
+    });
+  });
+
+  describe("POST /api/auth/resend-otp", () => {
+    it("should return 422 if validation fails", async () => {
+      const res = await request(app)
+        .post("/api/auth/resend-otp")
+        .send({ email: "not-an-email" });
+
+      expect(res.status).toBe(422);
+      expect(res.body.message).toBe("Validation Failed");
+    });
+
+    it("should return 429 if requested during cooldown", async () => {
+      (
+        authService.resendOtpService as unknown as AsyncMock<unknown>
+      ).mockRejectedValue(
+        new authService.AppError(
+          "Please wait 30 seconds before requesting a new code.",
+          429,
+        ),
+      );
+
+      const res = await request(app)
+        .post("/api/auth/resend-otp")
+        .send({ email: "thura@gmail.com" });
+
+      expect(res.status).toBe(429);
+      expect(res.body.message).toBe(
+        "Please wait 30 seconds before requesting a new code.",
+      );
+    });
+
+    it("should return 200 on success", async () => {
+      (
+        authService.resendOtpService as unknown as AsyncMock<void>
+      ).mockResolvedValue(undefined);
+
+      const res = await request(app)
+        .post("/api/auth/resend-otp")
+        .send({ email: "thura@gmail.com" });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.message).toBe(
+        "A new verification code has been sent to your email.",
       );
     });
   });

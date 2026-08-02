@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find generated *)",
+      "Bash(cat tsconfig.json)",
+      "Bash(cat jest.config.*)",
+      "Bash(curl -s -i http://localhost:5000/api/auth/register -X POST -H \"Content-Type: application/json\" -d '{\"name\":\"Test Client\",\"email\":\"testclient_rbac@example.com\",\"password\":\"password123\",\"role\":\"CLIENT\"}')",
+      "Bash(curl -s -i http://localhost:5000/api/auth/register -X POST -H \"Content-Type: application/json\" -d '{\"name\":\"Test Engineer\",\"email\":\"testengineer_rbac@example.com\",\"password\":\"password123\",\"role\":\"ENGINEER\"}')",
+      "Bash(curl -s -i http://localhost:5000/api/auth/register -X POST -H \"Content-Type: application/json\" -d '{\"name\":\"Test Company\",\"email\":\"testcompany_rbac@example.com\",\"password\":\"password123\",\"role\":\"COMPANY\"}')",
+      "Bash(curl -s -i http://localhost:5000/api/auth/register -X POST -H \"Content-Type: application/json\" -d '{\"name\":\"Test Admin\",\"email\":\"testadmin_rbac@example.com\",\"password\":\"password123\",\"role\":\"SUPER_ADMIN\"}')"
+    ]
+  }
+}

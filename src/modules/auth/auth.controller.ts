@@ -3,9 +3,16 @@ import {
   registerUserService,
   loginUserService,
   refreshTokenService,
+  verifyEmailService,
+  resendOtpService,
   generateToken,
 } from "./auth.service.js";
-import { CreateUserSchema, LogInSchema } from "./auth.schema.js";
+import {
+  CreateUserSchema,
+  LogInSchema,
+  VerifyEmailSchema,
+  ResendOtpSchema,
+} from "./auth.schema.js";
 
 const getCookieValue = (
   req: Request,
@@ -55,14 +62,76 @@ export const registerUser = async (req: Request, res: Response) => {
 
   try {
     const user = await registerUserService(parsed.data);
-    const accessToken = generateToken(res, user.id.toString());
 
+    // No token is issued yet: the account must verify its email before it can
+    // log in, so we only confirm that the verification code has been sent.
     res.status(201).json({
       success: true,
       status: 201,
-      message: "User Created Successfully",
+      message:
+        "User Created Successfully. Please verify your email with the OTP we sent.",
       user,
-      accessToken,
+    });
+  } catch (error: unknown) {
+    const statusCode = getStatusCode(error);
+    res.status(statusCode).json({
+      success: false,
+      status: statusCode,
+      message: getErrorMessage(error),
+    });
+  }
+};
+
+export const verifyEmail = async (req: Request, res: Response) => {
+  const parsed = VerifyEmailSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(422).json({
+      success: false,
+      status: 422,
+      message: "Validation Failed",
+      errors: parsed.error.flatten(),
+    });
+    return;
+  }
+
+  try {
+    const user = await verifyEmailService(parsed.data);
+
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Email Verified Successfully",
+      user,
+    });
+  } catch (error: unknown) {
+    const statusCode = getStatusCode(error);
+    res.status(statusCode).json({
+      success: false,
+      status: statusCode,
+      message: getErrorMessage(error),
+    });
+  }
+};
+
+export const resendOtp = async (req: Request, res: Response) => {
+  const parsed = ResendOtpSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(422).json({
+      success: false,
+      status: 422,
+      message: "Validation Failed",
+      errors: parsed.error.flatten(),
+    });
+    return;
+  }
+
+  try {
+    await resendOtpService(parsed.data);
+
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "A new verification code has been sent to your email.",
     });
   } catch (error: unknown) {
     const statusCode = getStatusCode(error);
