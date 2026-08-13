@@ -42,11 +42,16 @@ jest.mock("./client.service.ts", () => ({
   getEngineerProfile: jest.fn(),
   getTeamProfile: jest.fn(),
   saveFavorite: jest.fn(),
+  removeFavorite: jest.fn(),
   getFavorites: jest.fn(),
   createProject: jest.fn(),
+  assignProjectToEngineer: jest.fn(),
 }));
 
 type AsyncMock<T> = jest.Mock<(...args: unknown[]) => Promise<T>>;
+type ClientServiceModule = typeof import("./client.service.ts");
+
+const mockedClientService = clientService as jest.Mocked<ClientServiceModule>;
 
 const app = express();
 app.use(express.json());
@@ -208,6 +213,39 @@ describe("Client Routes", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual(favorites);
+  });
+
+  it("DELETE /api/clients/favorites/:engineerProfileId should remove a favorite", async () => {
+    mockedClientService.removeFavorite.mockResolvedValue({
+      count: 1,
+    } as Awaited<ReturnType<typeof clientService.removeFavorite>>);
+
+    const res = await request(app)
+      .delete("/api/clients/favorites/5")
+      .set("Authorization", "Bearer valid-client-token");
+
+    expect(res.status).toBe(204);
+    expect(mockedClientService.removeFavorite).toHaveBeenCalledWith(10, 5);
+  });
+
+  it("POST /api/clients/projects/:projectId/engineers/:engineerProfileId should assign an engineer", async () => {
+    mockedClientService.assignProjectToEngineer.mockResolvedValue({
+      id: 99,
+      engineerProfileId: 7,
+      status: "ASSIGNED",
+    } as unknown as Awaited<
+      ReturnType<typeof clientService.assignProjectToEngineer>
+    >);
+
+    const res = await request(app)
+      .post("/api/clients/projects/99/engineers/7")
+      .set("Authorization", "Bearer valid-client-token");
+
+    expect(res.status).toBe(204);
+    expect(mockedClientService.assignProjectToEngineer).toHaveBeenCalledWith(
+      99,
+      7,
+    );
   });
 
   it("POST /api/clients/projects should create project", async () => {

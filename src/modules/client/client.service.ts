@@ -169,6 +169,15 @@ export async function saveFavorite(userId: number, engineerProfileId: number) {
   });
 }
 
+export async function removeFavorite(
+  userId: number,
+  engineerProfileId: number,
+) {
+  return prisma.favorite.deleteMany({
+    where: { clientId: userId, engineerProfileId },
+  });
+}
+
 export async function getFavorites(userId: number) {
   return prisma.favorite.findMany({
     where: { clientId: userId },
@@ -200,6 +209,19 @@ export async function createProject(
       visibility: data.visibility ?? null,
       assignmentType: data.assignmentType ?? null,
       status: "OPEN",
+    },
+  });
+}
+
+export async function assignProjectToEngineer(
+  projectId: number,
+  engineerProfileId: number,
+) {
+  return prisma.project.update({
+    where: { id: projectId },
+    data: {
+      selectedEngineerId: engineerProfileId,
+      status: "ASSIGNED",
     },
   });
 }

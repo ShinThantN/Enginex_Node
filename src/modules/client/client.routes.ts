@@ -16,5 +16,10 @@ router.put("/profile", clientController.updateProfile);
 router.post("/favorites", clientController.saveFavorite);
 router.get("/favorites", clientController.getFavorites);
 router.post("/projects", clientController.createProject);
+router.post(
+  "/projects/:projectId/engineers/:engineerProfileId",
+  clientController.assignProjectToEngineer,
+);
+router.delete("/favorites/:engineerProfileId", clientController.removeFavorite);
 
 export default router;
