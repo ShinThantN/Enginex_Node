@@ -46,6 +46,11 @@ jest.mock("./client.service.ts", () => ({
   getFavorites: jest.fn(),
   createProject: jest.fn(),
   assignProjectToEngineer: jest.fn(),
+  getClientProjects: jest.fn(),
+  updateClientProject: jest.fn(),
+  deleteClientProject: jest.fn(),
+  getProjectApplications: jest.fn(),
+  reviewProjectApplication: jest.fn(),
 }));
 
 type AsyncMock<T> = jest.Mock<(...args: unknown[]) => Promise<T>>;
@@ -278,5 +283,101 @@ describe("Client Routes", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.data).toEqual(project);
+  });
+
+  it("GET /api/clients/projects should list the client's own projects", async () => {
+    const projects = [{ id: 99, title: "Bridge Design", status: "OPEN" }];
+
+    (
+      clientService.getClientProjects as unknown as AsyncMock<typeof projects>
+    ).mockResolvedValue(projects);
+
+    const res = await request(app)
+      .get("/api/clients/projects")
+      .set("Authorization", "Bearer valid-client-token");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual(projects);
+    expect(mockedClientService.getClientProjects).toHaveBeenCalledWith(10);
+  });
+
+  it("PATCH /api/clients/projects/:id should update project", async () => {
+    const updated = { id: 99, title: "Revised Bridge Design", status: "OPEN" };
+
+    (
+      clientService.updateClientProject as unknown as AsyncMock<typeof updated>
+    ).mockResolvedValue(updated);
+
+    const res = await request(app)
+      .patch("/api/clients/projects/99")
+      .set("Authorization", "Bearer valid-client-token")
+      .send({ title: "Revised Bridge Design", selectedEngineerId: 7 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual(updated);
+    expect(mockedClientService.updateClientProject).toHaveBeenCalledWith(
+      10,
+      99,
+      { title: "Revised Bridge Design", selectedEngineerId: 7 },
+    );
+  });
+
+  it("DELETE /api/clients/projects/:id should delete project", async () => {
+    mockedClientService.deleteClientProject.mockResolvedValue(undefined);
+
+    const res = await request(app)
+      .delete("/api/clients/projects/99")
+      .set("Authorization", "Bearer valid-client-token");
+
+    expect(res.status).toBe(204);
+    expect(mockedClientService.deleteClientProject).toHaveBeenCalledWith(
+      10,
+      99,
+    );
+  });
+
+  it("GET /api/clients/projects/:id/applications should list applicants", async () => {
+    const applications = [{ id: 4, projectId: 99, status: "PENDING" }];
+
+    (
+      clientService.getProjectApplications as unknown as AsyncMock<
+        typeof applications
+      >
+    ).mockResolvedValue(applications);
+
+    const res = await request(app)
+      .get("/api/clients/projects/99/applications")
+      .set("Authorization", "Bearer valid-client-token");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual(applications);
+    expect(mockedClientService.getProjectApplications).toHaveBeenCalledWith(
+      10,
+      99,
+    );
+  });
+
+  it("PATCH /api/clients/projects/:id/applications/:applicationId should review applicant", async () => {
+    const application = { id: 4, status: "ACCEPTED" };
+
+    (
+      clientService.reviewProjectApplication as unknown as AsyncMock<
+        typeof application
+      >
+    ).mockResolvedValue(application);
+
+    const res = await request(app)
+      .patch("/api/clients/projects/99/applications/4")
+      .set("Authorization", "Bearer valid-client-token")
+      .send({ status: "ACCEPTED" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual(application);
+    expect(mockedClientService.reviewProjectApplication).toHaveBeenCalledWith(
+      10,
+      99,
+      4,
+      { status: "ACCEPTED" },
+    );
   });
 });

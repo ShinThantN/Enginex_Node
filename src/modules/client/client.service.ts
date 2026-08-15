@@ -1,8 +1,11 @@
 import { prisma } from "../../shared/config/index.ts";
+import { AppError } from "../auth/auth.service.ts";
 import type {
   UpdateProfileInput,
   SearchQueryInput,
   CreateProjectInput,
+  UpdateProjectInput,
+  ReviewProjectApplicationInput,
 } from "./client.validator.ts";
 
 export async function getClientProfile(userId: number) {
@@ -211,6 +214,208 @@ export async function createProject(
       status: "OPEN",
     },
   });
+}
+
+export async function getClientProjects(clientId: number) {
+  return prisma.project.findMany({
+    where: { clientId },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      budgetMin: true,
+      budgetMax: true,
+      location: true,
+      status: true,
+      selectedEngineerId: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+}
+
+export async function updateClientProject(
+  clientId: number,
+  projectId: number,
+  data: UpdateProjectInput,
+) {
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, clientId },
+  });
+
+  if (!project) {
+    throw new AppError("Project not found or you do not own it", 404);
+  }
+
+  const updatePayload: {
+    title?: string | null;
+    description?: string | null;
+    budgetMin?: number | null;
+    budgetMax?: number | null;
+    location?: string | null;
+    selectedEngineerId?: number | null;
+    status?: "OPEN" | "ASSIGNED";
+  } = {};
+
+  if (data.title !== undefined) updatePayload.title = data.title;
+  if (data.description !== undefined)
+    updatePayload.description = data.description;
+  if (data.budgetMin !== undefined) updatePayload.budgetMin = data.budgetMin;
+  if (data.budgetMax !== undefined) updatePayload.budgetMax = data.budgetMax;
+  if (data.location !== undefined) updatePayload.location = data.location;
+
+  if (data.selectedEngineerId !== undefined) {
+    updatePayload.selectedEngineerId = data.selectedEngineerId;
+    updatePayload.status = data.selectedEngineerId ? "ASSIGNED" : "OPEN";
+  }
+
+  return prisma.project.update({
+    where: { id: projectId },
+    data: updatePayload,
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      budgetMin: true,
+      budgetMax: true,
+      location: true,
+      status: true,
+      selectedEngineerId: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+}
+
+export async function deleteClientProject(clientId: number, projectId: number) {
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, clientId },
+    select: { id: true },
+  });
+
+  if (!project) {
+    throw new AppError("Project not found or you do not own it", 404);
+  }
+
+  await prisma.project.delete({ where: { id: projectId } });
+}
+
+export async function getProjectApplications(
+  clientId: number,
+  projectId: number,
+) {
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, clientId },
+    select: { id: true },
+  });
+
+  if (!project) {
+    throw new AppError("Project not found or you do not own it", 404);
+  }
+
+  return prisma.projectResponse
+    .findMany({
+      where: {
+        projectId,
+        responseType: "APPLICATION",
+      },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        projectId: true,
+        engineerProfileId: true,
+        status: true,
+        proposedPrice: true,
+        message: true,
+        createdAt: true,
+        engineerProfile: {
+          select: {
+            id: true,
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                profileImage: true,
+              },
+            },
+            specialization: true,
+            location: true,
+            availabilityStatus: true,
+          },
+        },
+      },
+    })
+    .then((applications) =>
+      applications.map((application) => ({
+        ...application,
+        engineer: application.engineerProfile
+          ? {
+              id: application.engineerProfile.id,
+              user: application.engineerProfile.user,
+              specialization: application.engineerProfile.specialization,
+              location: application.engineerProfile.location,
+              availabilityStatus:
+                application.engineerProfile.availabilityStatus,
+            }
+          : null,
+      })),
+    );
+}
+
+export async function reviewProjectApplication(
+  clientId: number,
+  projectId: number,
+  applicationId: number,
+  data: ReviewProjectApplicationInput,
+) {
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, clientId },
+    select: { id: true, status: true, selectedEngineerId: true },
+  });
+
+  if (!project) {
+    throw new AppError("Project not found or you do not own it", 404);
+  }
+
+  const application = await prisma.projectResponse.findFirst({
+    where: {
+      id: applicationId,
+      projectId,
+      responseType: "APPLICATION",
+    },
+    select: {
+      id: true,
+      engineerProfileId: true,
+      status: true,
+    },
+  });
+
+  if (!application) {
+    throw new AppError("Application not found", 404);
+  }
+
+  const applicationStatus = data.status;
+
+  const updatedApplication = await prisma.projectResponse.update({
+    where: { id: applicationId },
+    data: {
+      status: applicationStatus,
+    },
+  });
+
+  if (applicationStatus === "ACCEPTED") {
+    await prisma.project.update({
+      where: { id: projectId },
+      data: {
+        selectedEngineerId: application.engineerProfileId ?? null,
+        status: "ASSIGNED",
+      },
+    });
+  }
+
+  return updatedApplication;
 }
 
 export async function assignProjectToEngineer(

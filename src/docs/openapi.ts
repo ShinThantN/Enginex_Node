@@ -232,6 +232,30 @@ const openApiDocument = {
       },
     },
     "/clients/projects": {
+      get: {
+        tags: ["Clients"],
+        summary: "List the caller's own submitted projects",
+        security: bearerAuth,
+        responses: {
+          200: {
+            description: "Client projects",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/Project" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          ...jsonResponse,
+        },
+      },
       post: {
         tags: ["Clients"],
         summary: "Create a project listing",
@@ -240,11 +264,104 @@ const openApiDocument = {
           required: true,
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/Project" },
+              schema: { $ref: "#/components/schemas/ProjectCreate" },
             },
           },
         },
         responses: { 201: { description: "Project created" }, ...jsonResponse },
+      },
+    },
+    "/clients/projects/{id}": {
+      patch: {
+        tags: ["Clients"],
+        summary: "Update a project or assign an engineer",
+        security: bearerAuth,
+        parameters: [{ $ref: "#/components/parameters/Id" }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ProjectUpdate" },
+            },
+          },
+        },
+        responses: {
+          200: { description: "Project updated" },
+          ...jsonResponse,
+        },
+      },
+      delete: {
+        tags: ["Clients"],
+        summary: "Delete or cancel a client-owned project",
+        security: bearerAuth,
+        parameters: [{ $ref: "#/components/parameters/Id" }],
+        responses: { 204: { description: "Project deleted" }, ...jsonResponse },
+      },
+    },
+    "/clients/projects/{id}/applications": {
+      get: {
+        tags: ["Clients"],
+        summary: "List applicants for a client-owned project",
+        security: bearerAuth,
+        parameters: [{ $ref: "#/components/parameters/Id" }],
+        responses: {
+          200: {
+            description: "Project applications",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: {
+                      type: "array",
+                      items: {
+                        $ref: "#/components/schemas/ProjectApplication",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          ...jsonResponse,
+        },
+      },
+    },
+    "/clients/projects/{id}/applications/{applicationId}": {
+      patch: {
+        tags: ["Clients"],
+        summary: "Accept or reject an applicant",
+        security: bearerAuth,
+        parameters: [
+          { $ref: "#/components/parameters/Id" },
+          {
+            name: "applicationId",
+            in: "path",
+            required: true,
+            schema: { type: "integer", minimum: 1 },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["status"],
+                properties: {
+                  status: {
+                    type: "string",
+                    enum: ["ACCEPTED", "REJECTED"],
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: "Application reviewed" },
+          ...jsonResponse,
+        },
       },
     },
 
@@ -328,6 +445,61 @@ const openApiDocument = {
         summary: "List direct project assignments",
         security: bearerAuth,
         responses: { 200: { description: "Direct projects" }, ...jsonResponse },
+      },
+    },
+    "/engineers/projects/open": {
+      get: {
+        tags: ["Engineers"],
+        summary:
+          "List open projects available for engineers to browse and apply to",
+        security: bearerAuth,
+        responses: {
+          200: {
+            description: "Open projects",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/Project" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          ...jsonResponse,
+        },
+      },
+    },
+    "/engineers/applications": {
+      get: {
+        tags: ["Engineers"],
+        summary: "List the caller's own submitted project applications",
+        security: bearerAuth,
+        responses: {
+          200: {
+            description: "Applications",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: {
+                      type: "array",
+                      items: {
+                        $ref: "#/components/schemas/EngineerApplication",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          ...jsonResponse,
+        },
       },
     },
     "/engineers/companies": {
@@ -797,11 +969,104 @@ const openApiDocument = {
       Project: {
         type: "object",
         properties: {
+          id: { type: "integer" },
           title: { type: "string" },
           description: { type: "string" },
           budgetMin: { type: "number" },
           budgetMax: { type: "number" },
           location: { type: "string" },
+          status: {
+            type: "string",
+            enum: ["OPEN", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"],
+          },
+          selectedEngineerId: { type: "integer", nullable: true },
+          createdAt: { type: "string", format: "date-time" },
+          updatedAt: { type: "string", format: "date-time" },
+        },
+      },
+      ProjectCreate: {
+        type: "object",
+        required: ["title"],
+        properties: {
+          title: { type: "string", minLength: 1, maxLength: 255 },
+          description: { type: "string" },
+          imageUrl: { type: "string", format: "uri" },
+          budgetMin: { type: "number", minimum: 0 },
+          budgetMax: { type: "number", minimum: 0 },
+          location: { type: "string" },
+          visibility: {
+            type: "string",
+            enum: ["PUBLIC", "PRIVATE"],
+          },
+          assignmentType: {
+            type: "string",
+            enum: ["OPEN", "DIRECT"],
+          },
+        },
+      },
+      ProjectUpdate: {
+        type: "object",
+        properties: {
+          selectedEngineerId: { type: "integer", minimum: 1 },
+          title: { type: "string", minLength: 1, maxLength: 255 },
+          description: { type: "string" },
+          budgetMin: { type: "number", minimum: 0 },
+          budgetMax: { type: "number", minimum: 0 },
+          location: { type: "string" },
+        },
+      },
+      ProjectApplication: {
+        type: "object",
+        properties: {
+          id: { type: "integer" },
+          projectId: { type: "integer" },
+          engineerProfileId: { type: "integer", nullable: true },
+          engineer: {
+            type: "object",
+            nullable: true,
+            properties: {
+              id: { type: "integer" },
+              user: {
+                type: "object",
+                properties: {
+                  id: { type: "integer" },
+                  fullName: { type: "string" },
+                  email: { type: "string" },
+                  profileImage: { type: "string", format: "uri" },
+                },
+              },
+              specialization: {
+                type: "string",
+                enum: ["CIVIL", "ARCHITECT", "MECHANICAL", "ELECTRICAL"],
+              },
+              location: { type: "string" },
+              availabilityStatus: {
+                type: "string",
+                enum: ["AVAILABLE", "BUSY", "ON_PROJECT"],
+              },
+            },
+          },
+          status: {
+            type: "string",
+            enum: ["PENDING", "ACCEPTED", "REJECTED"],
+          },
+          proposedPrice: { type: "number", nullable: true },
+          message: { type: "string", nullable: true },
+          createdAt: { type: "string", format: "date-time" },
+        },
+      },
+      EngineerApplication: {
+        type: "object",
+        properties: {
+          id: { type: "integer" },
+          projectId: { type: "integer" },
+          status: {
+            type: "string",
+            enum: ["PENDING", "ACCEPTED", "REJECTED"],
+          },
+          proposedPrice: { type: "number", nullable: true },
+          message: { type: "string", nullable: true },
+          createdAt: { type: "string", format: "date-time" },
         },
       },
       Post: {
