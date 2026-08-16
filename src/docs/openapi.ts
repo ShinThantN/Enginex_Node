@@ -23,6 +23,8 @@ const openApiDocument = {
     { name: "Teams" },
     { name: "Posts" },
     { name: "Comments" },
+    { name: "Users" },
+    { name: "Images" },
     { name: "Uploads" },
     { name: "Admin" },
   ],
@@ -829,6 +831,134 @@ const openApiDocument = {
           },
         },
         responses: { 201: { description: "Image uploaded" }, ...jsonResponse },
+      },
+    },
+    "/users/profile-image": {
+      post: {
+        tags: ["Users"],
+        summary: "Upload or replace the authenticated user's profile image",
+        security: bearerAuth,
+        requestBody: {
+          required: true,
+          content: {
+            "multipart/form-data": {
+              schema: {
+                type: "object",
+                required: ["image"],
+                properties: {
+                  image: { type: "string", format: "binary" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: "Profile image stored" },
+          413: { description: "Profile image exceeds 5 MB" },
+          ...jsonResponse,
+        },
+      },
+      delete: {
+        tags: ["Users"],
+        summary: "Delete the authenticated user's profile image",
+        security: bearerAuth,
+        responses: {
+          204: { description: "Profile image deleted" },
+          ...jsonResponse,
+        },
+      },
+    },
+    "/users/{id}/profile-image": {
+      get: {
+        tags: ["Users"],
+        summary: "Get a user's profile image bytes",
+        parameters: [{ $ref: "#/components/parameters/Id" }],
+        responses: {
+          200: {
+            description: "Profile image",
+            content: {
+              "image/jpeg": { schema: { type: "string", format: "binary" } },
+              "image/png": { schema: { type: "string", format: "binary" } },
+              "image/webp": { schema: { type: "string", format: "binary" } },
+            },
+          },
+          ...jsonResponse,
+        },
+      },
+    },
+    "/images/{resource}/{id}": {
+      get: {
+        tags: ["Images"],
+        summary: "Get a post, project, or portfolio image",
+        parameters: [
+          {
+            name: "resource",
+            in: "path",
+            required: true,
+            schema: { type: "string", enum: ["posts", "projects", "portfolios"] },
+          },
+          { $ref: "#/components/parameters/Id" },
+        ],
+        responses: {
+          200: {
+            description: "Resource image",
+            content: {
+              "image/jpeg": { schema: { type: "string", format: "binary" } },
+              "image/png": { schema: { type: "string", format: "binary" } },
+              "image/webp": { schema: { type: "string", format: "binary" } },
+            },
+          },
+          ...jsonResponse,
+        },
+      },
+      post: {
+        tags: ["Images"],
+        summary: "Upload or replace an owned resource image",
+        security: bearerAuth,
+        parameters: [
+          {
+            name: "resource",
+            in: "path",
+            required: true,
+            schema: { type: "string", enum: ["posts", "projects", "portfolios"] },
+          },
+          { $ref: "#/components/parameters/Id" },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "multipart/form-data": {
+              schema: {
+                type: "object",
+                required: ["image"],
+                properties: { image: { type: "string", format: "binary" } },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: "Resource image stored" },
+          413: { description: "Image exceeds 5 MB" },
+          ...jsonResponse,
+        },
+      },
+      delete: {
+        tags: ["Images"],
+        summary: "Delete an owned resource image",
+        security: bearerAuth,
+        parameters: [
+          {
+            name: "resource",
+            in: "path",
+            required: true,
+            schema: { type: "string", enum: ["posts", "projects", "portfolios"] },
+          },
+          { $ref: "#/components/parameters/Id" },
+        ],
+        responses: {
+          204: { description: "Resource image deleted" },
+          ...jsonResponse,
+        },
       },
     },
     "/admin": {

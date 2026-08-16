@@ -7,6 +7,8 @@ import { postsRouter, commentsRouter } from "../modules/feed/feed.routes.ts";
 import teamRoutes from "../modules/team/teams.routes.ts";
 import uploadRoutes from "../modules/upload/upload.routes.ts";
 import docsRouter from "../docs/docs.routes.ts";
+import usersRoutes from "../modules/users/users.routes.ts";
+import resourceImageRoutes from "../modules/images/resource-image.routes.ts";
 
 const router = express.Router();
 router.use("/admin", adminRoutes);
@@ -17,6 +19,8 @@ router.use("/engineers", engineersRoutes);
 router.use("/posts", postsRouter);
 router.use("/team", teamRoutes);
 router.use("/uploads", uploadRoutes);
+router.use("/users", usersRoutes);
+router.use("/images", resourceImageRoutes);
 router.use("/docs", docsRouter);
 
 export default router;

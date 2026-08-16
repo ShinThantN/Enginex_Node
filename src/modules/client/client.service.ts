@@ -8,6 +8,37 @@ import type {
   ReviewProjectApplicationInput,
 } from "./client.validator.ts";
 
+const portfolioSelect = {
+  id: true,
+  engineerProfileId: true,
+  title: true,
+  overview: true,
+  description: true,
+  imageUrl: true,
+  projectLink: true,
+  startDate: true,
+  endDate: true,
+  createdAt: true,
+} as const;
+
+const clientProjectSelect = {
+  id: true,
+  clientId: true,
+  title: true,
+  description: true,
+  imageUrl: true,
+  budgetMin: true,
+  budgetMax: true,
+  location: true,
+  visibility: true,
+  assignmentType: true,
+  status: true,
+  selectedEngineerId: true,
+  selectedTeamId: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 export async function getClientProfile(userId: number) {
   return prisma.user.findUnique({
     where: { id: userId },
@@ -106,7 +137,20 @@ export async function searchEngineersAndTeams(query: SearchQueryInput) {
 export async function getEngineerProfile(id: number) {
   return prisma.engineerProfile.findUnique({
     where: { id },
-    include: {
+    select: {
+      id: true,
+      userId: true,
+      specialization: true,
+      bio: true,
+      avatarUrl: true,
+      yearsOfExperience: true,
+      availabilityStatus: true,
+      hourlyRate: true,
+      location: true,
+      tuVerified: true,
+      ratingAverage: true,
+      createdAt: true,
+      updatedAt: true,
       user: {
         select: {
           id: true,
@@ -116,7 +160,7 @@ export async function getEngineerProfile(id: number) {
         },
       },
       experiences: true,
-      portfolios: true,
+      portfolios: { select: portfolioSelect },
     },
   });
 }
@@ -213,6 +257,7 @@ export async function createProject(
       assignmentType: data.assignmentType ?? null,
       status: "OPEN",
     },
+    select: clientProjectSelect,
   });
 }
 
@@ -220,18 +265,7 @@ export async function getClientProjects(clientId: number) {
   return prisma.project.findMany({
     where: { clientId },
     orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      budgetMin: true,
-      budgetMax: true,
-      location: true,
-      status: true,
-      selectedEngineerId: true,
-      createdAt: true,
-      updatedAt: true,
-    },
+    select: clientProjectSelect,
   });
 }
 
@@ -273,18 +307,7 @@ export async function updateClientProject(
   return prisma.project.update({
     where: { id: projectId },
     data: updatePayload,
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      budgetMin: true,
-      budgetMax: true,
-      location: true,
-      status: true,
-      selectedEngineerId: true,
-      createdAt: true,
-      updatedAt: true,
-    },
+    select: clientProjectSelect,
   });
 }
 
@@ -428,5 +451,6 @@ export async function assignProjectToEngineer(
       selectedEngineerId: engineerProfileId,
       status: "ASSIGNED",
     },
+    select: clientProjectSelect,
   });
 }

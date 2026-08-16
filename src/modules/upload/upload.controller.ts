@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
-import { uploadImage } from "../../shared/config/s3.ts";
 import { AppError } from "../../shared/utils/utils.ts";
+import { getStorageProvider } from "../../shared/config/image-storage.ts";
 
 export async function upload(req: Request, res: Response): Promise<void> {
   if (!Buffer.isBuffer(req.body)) {
@@ -9,6 +9,15 @@ export async function upload(req: Request, res: Response): Promise<void> {
   }
 
   try {
+    if (getStorageProvider() === "database") {
+      res.status(400).json({
+        error:
+          "Database mode requires a target resource. Use /api/users/profile-image or /api/images/{posts|projects|portfolios}/:id.",
+      });
+      return;
+    }
+
+    const { uploadImage } = await import("../../shared/config/s3.ts");
     const image = await uploadImage(req.user!.id, req.body, req.headers["content-type"]);
     res.status(201).json({ data: image });
   } catch (error) {

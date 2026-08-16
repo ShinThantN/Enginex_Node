@@ -9,7 +9,7 @@ Enginex is a TypeScript Node.js backend for a developer marketplace platform. It
 - Serve REST APIs for the Enginex web and mobile clients
 - Manage user authentication, profiles, and roles (admin, client, engineer)
 - Provide a social feed with posts, comments, likes and viral scoring
-- Support file uploads (S3) and team/project collaboration features
+- Support switchable local-database and S3 image storage plus team/project collaboration features
 
 ## Tech Stack
 
@@ -18,7 +18,7 @@ Enginex is a TypeScript Node.js backend for a developer marketplace platform. It
 - ORM: Prisma (generated client in `generated/prisma`)
 - Database: MySQL (configured via Prisma)
 - Auth: JWT, OTP (modules under `src/modules/auth`)
-- Object Storage: AWS S3 via `@aws-sdk/client-s3`
+- Image storage: MariaDB (`STORAGE_PROVIDER=database`) or AWS S3 (`STORAGE_PROVIDER=s3`)
 - Validation: Zod
 - Dev tools: `jest` for tests, `eslint` for linting
 - Deploy tools: `Docker` for containerization
@@ -52,6 +52,22 @@ npm run dev
 npm test
 ```
 
+## Local/offline Docker prototype
+
+Once the Node and MySQL images and npm dependency layers are available locally:
+
+```bash
+docker compose build app
+docker compose up -d mysql
+npx prisma migrate deploy
+docker compose up -d app
+```
+
+Set `DATABASE_URL` from `.env.example` before running the migration command.
+Compose selects database image storage and does not require AWS credentials.
+It also treats a root `.env` as optional; copy `.env.example` to `.env` when you
+need local JWT, email, or S3 overrides.
+
 ## API Endpoints (overview)
 
 The server mounts route modules under `/api/*`. Below are the main route groups and representative endpoints. Refer to `src/modules/*/*.routes.ts` for full route details.
@@ -80,8 +96,25 @@ The server mounts route modules under `/api/*`. Below are the main route groups 
   - `GET /api/team` — list teams
   - `POST /api/team` — create a team
 
-- **Upload** (`/api/upload`)
-  - `POST /api/upload` — upload files to S3
+- **Upload** (`/api/uploads`)
+  - `POST /api/uploads/images` — legacy raw S3 upload; disabled in database mode
+
+- **Profile image** (`/api/users`)
+  - `POST /api/users/profile-image` — upload/replace one `multipart/form-data` image
+  - `GET /api/users/:id/profile-image` — return the stored image bytes
+  - `DELETE /api/users/profile-image` — delete the authenticated user's image
+
+- **Post, project and portfolio images** (`/api/images`)
+  - `POST /api/images/posts/:id` — upload/replace an owned post image
+  - `POST /api/images/projects/:id` — upload/replace an owned project image
+  - `POST /api/images/portfolios/:id` — upload/replace an owned portfolio image
+  - `GET /api/images/:resource/:id` — return image bytes
+  - `DELETE /api/images/:resource/:id` — delete an owned resource image
+
+All POST image endpoints accept one `multipart/form-data` file. Create the post,
+project, or portfolio first, then upload its image using the returned resource ID.
+In database mode, normal JSON contains a relative `profileImage` or `imageUrl`;
+binary fields are returned only by the dedicated GET endpoints.
 
 - **Admin** (`/api/admin`)
   - various admin management endpoints under `src/modules/admin`

@@ -6,7 +6,10 @@ declare global {
       user?: {
         id: number;
         role: UserRole;
-        role?: UserRole;
+      };
+      imageUpload?: {
+        buffer: Buffer;
+        mimeType: string;
       };
     }
   }
