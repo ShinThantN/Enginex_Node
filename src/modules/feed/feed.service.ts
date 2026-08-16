@@ -159,7 +159,9 @@ export async function updatePost(userId: number, postId: number, input: UpdatePo
       ...(input.title !== undefined ? { title: input.title } : {}),
       ...(input.content !== undefined ? { content: input.content } : {}),
       ...(input.visibility !== undefined ? { visibility: input.visibility } : {}),
-      ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl } : {}),
+      ...(input.imageUrl !== undefined
+        ? { imageUrl: input.imageUrl, imageData: null, imageType: null }
+        : {}),
     },
     select: postSelect,
   });

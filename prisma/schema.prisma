@@ -107,6 +107,8 @@ model User {
   phone         String?    @db.VarChar(50)
   role          UserRole
   profileImage  String?    @db.VarChar(500)
+  imageData     Bytes?     @db.MediumBlob
+  imageType     String?    @db.VarChar(100)
   status        UserStatus
   emailVerified Boolean    @default(false)
   otpHash       String?    @db.VarChar(255)
@@ -203,6 +205,8 @@ model EngineerPortfolio {
   overview          String?   @db.Text
   description       String?   @db.Text
   imageUrl          String?   @db.VarChar(500)
+  imageData         Bytes?    @db.MediumBlob
+  imageType         String?   @db.VarChar(100)
   projectLink       String?   @db.VarChar(500)
   startDate         DateTime? @db.Date
   endDate           DateTime? @db.Date
@@ -248,6 +252,8 @@ model Project {
   title              String?                @db.VarChar(255)
   description        String?                @db.Text
   imageUrl           String?                @db.VarChar(500)
+  imageData          Bytes?                 @db.MediumBlob
+  imageType          String?                @db.VarChar(100)
   budgetMin          Decimal?               @db.Decimal(12, 2)
   budgetMax          Decimal?               @db.Decimal(12, 2)
   location           String?                @db.VarChar(255)
@@ -316,6 +322,8 @@ model Post {
   title                 String         @db.VarChar(255)
   content               String?        @db.Text
   imageUrl              String?        @db.VarChar(500)
+  imageData             Bytes?         @db.MediumBlob
+  imageType             String?        @db.VarChar(100)
   visibility            PostVisibility @default(PUBLIC)
   likeCount             Int            @default(0)
   commentCount          Int            @default(0)

@@ -57,10 +57,8 @@ jobs:
           Repo: ${{ github.repository }}
           Branch: ${{ github.ref_name }}
           Commit: ${{ github.sha }}
-          By: ${{ github.actor }}"
-
-          Image:
-          ${{ env.IMAGE_NAME }}:latest"
+          By: ${{ github.actor }}
+          Image: ${{ env.IMAGE_NAME }}:latest"
 
       - name: Notify Failure
         if: failure()

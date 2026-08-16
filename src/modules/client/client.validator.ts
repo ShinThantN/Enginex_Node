@@ -34,7 +34,24 @@ export const createProjectSchema = z.object({
   assignmentType: z.enum(["OPEN", "DIRECT"]).optional(),
 });
 
+export const updateProjectSchema = z.object({
+  selectedEngineerId: z.number().int().positive().optional(),
+  title: z.string().min(1).max(255).optional(),
+  description: z.string().optional(),
+  budgetMin: z.number().positive().optional(),
+  budgetMax: z.number().positive().optional(),
+  location: z.string().max(255).optional(),
+});
+
+export const reviewProjectApplicationSchema = z.object({
+  status: z.enum(["ACCEPTED", "REJECTED"]),
+});
+
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type SearchQueryInput = z.infer<typeof searchQuerySchema>;
 export type SaveFavoriteInput = z.infer<typeof saveFavoriteSchema>;
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
+export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
+export type ReviewProjectApplicationInput = z.infer<
+  typeof reviewProjectApplicationSchema
+>;

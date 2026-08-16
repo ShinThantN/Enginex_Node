@@ -1,21 +1,31 @@
 services:
   app:
+    build: .
     image: enginexmm/enginex:v1
     ports:
       - "3000:3000"
     depends_on:
       - mysql
+    environment:
+      - DATABASE_URL=mysql://user:password@mysql:3306/enginex_db
+      - PORT=3000
+      - STORAGE_PROVIDER=database
     env_file:
-      - .env
+      - path: .env
+        required: false
+    restart: always
 
   mysql:
-    image: mysql:8.0
-    ports:
-      - "3307:3306"
-    env_file:
-      - .env
-    volumes:
-      - mysql_data:/var/lib/mysql
+      image: mysql:8.0
+      ports:
+        - "3307:3306"
+      environment:
+        MYSQL_ROOT_PASSWORD: rootpassword
+        MYSQL_DATABASE: enginex_db
+        MYSQL_USER: user
+        MYSQL_PASSWORD: password
+      volumes:
+        - mysql_data:/var/lib/mysql
 
 volumes:
   mysql_data:
