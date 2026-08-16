@@ -8,6 +8,7 @@ import type {
 
 type PrismaClientInstance = typeof sharedPrisma;
 type EngineerPortfolioInput = {
+  id?: number | undefined;
   title?: string | undefined;
   overview?: string | undefined;
   description?: string | undefined;
@@ -51,6 +52,19 @@ export const setEngineerPrismaForTests = (
   engineerPrisma = prismaClient;
 };
 
+const portfolioSelect = {
+  id: true,
+  engineerProfileId: true,
+  title: true,
+  overview: true,
+  description: true,
+  imageUrl: true,
+  projectLink: true,
+  startDate: true,
+  endDate: true,
+  createdAt: true,
+} satisfies Prisma.EngineerPortfolioSelect;
+
 const engineerSelect = {
   id: true,
   fullName: true,
@@ -59,9 +73,22 @@ const engineerSelect = {
   role: true,
   profileImage: true,
   engineerProfile: {
-    include: {
+    select: {
+      id: true,
+      userId: true,
+      specialization: true,
+      bio: true,
+      avatarUrl: true,
+      yearsOfExperience: true,
+      availabilityStatus: true,
+      hourlyRate: true,
+      location: true,
+      tuVerified: true,
+      ratingAverage: true,
+      createdAt: true,
+      updatedAt: true,
       experiences: true,
-      portfolios: true,
+      portfolios: { select: portfolioSelect },
     },
   },
 } as const;
@@ -126,6 +153,28 @@ const buildPortfolioCreateData = (
       : {}),
   };
 };
+
+const buildPortfolioUpdateData = (
+  portfolio: EngineerPortfolioInput,
+): Prisma.EngineerPortfolioUncheckedUpdateInput => ({
+  ...(portfolio.title !== undefined ? { title: portfolio.title } : {}),
+  ...(portfolio.overview !== undefined ? { overview: portfolio.overview } : {}),
+  ...(portfolio.description !== undefined
+    ? { description: portfolio.description }
+    : {}),
+  ...(portfolio.imageUrl !== undefined
+    ? { imageUrl: portfolio.imageUrl, imageData: null, imageType: null }
+    : {}),
+  ...(portfolio.projectLink !== undefined
+    ? { projectLink: portfolio.projectLink }
+    : {}),
+  ...(portfolio.startDate !== undefined
+    ? { startDate: new Date(portfolio.startDate) }
+    : {}),
+  ...(portfolio.endDate !== undefined
+    ? { endDate: new Date(portfolio.endDate) }
+    : {}),
+});
 
 const buildUserUpdateData = (
   profileData: EngineerProfileInput,
@@ -288,15 +337,44 @@ export const updateEngineerProfileService = async (
 
   if (profileData.portfolios) {
     const engineerProfile = await getEngineerProfileRecord(userId);
+    const portfolioIds = profileData.portfolios.flatMap((portfolio) =>
+      portfolio.id === undefined ? [] : [portfolio.id],
+    );
+
+    if (portfolioIds.length > 0) {
+      const uniquePortfolioIds = new Set(portfolioIds);
+      if (uniquePortfolioIds.size !== portfolioIds.length) {
+        throw new AppError("Portfolio IDs must be unique", 422);
+      }
+
+      const ownedPortfolios = await prisma.engineerPortfolio.findMany({
+        where: {
+          engineerProfileId: engineerProfile.id,
+          id: { in: portfolioIds },
+        },
+        select: { id: true },
+      });
+      if (ownedPortfolios.length !== portfolioIds.length) {
+        throw new AppError("One or more portfolios do not belong to this engineer", 403);
+      }
+    }
 
     await prisma.$transaction([
       prisma.engineerPortfolio.deleteMany({
-        where: { engineerProfileId: engineerProfile.id },
+        where: {
+          engineerProfileId: engineerProfile.id,
+          ...(portfolioIds.length > 0 ? { id: { notIn: portfolioIds } } : {}),
+        },
       }),
       ...profileData.portfolios.map((portfolio) =>
-        prisma.engineerPortfolio.create({
-          data: buildPortfolioCreateData(engineerProfile.id, portfolio),
-        }),
+        portfolio.id === undefined
+          ? prisma.engineerPortfolio.create({
+              data: buildPortfolioCreateData(engineerProfile.id, portfolio),
+            })
+          : prisma.engineerPortfolio.update({
+              where: { id: portfolio.id },
+              data: buildPortfolioUpdateData(portfolio),
+            }),
       ),
     ]);
   }

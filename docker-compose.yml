@@ -9,8 +9,10 @@ services:
     environment:
       - DATABASE_URL=mysql://user:password@mysql:3306/enginex_db
       - PORT=3000
+      - STORAGE_PROVIDER=database
     env_file:
-      - .env
+      - path: .env
+        required: false
     restart: always
 
   mysql:

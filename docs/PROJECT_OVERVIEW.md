@@ -27,6 +27,7 @@ flowchart LR
     Uploads[Upload module]
     AdminModule[Admin module]
     DB[(MySQL via Prisma)]
+    ImageStorage{STORAGE_PROVIDER}
     S3[(S3-compatible storage)]
     Email[Email service]
 
@@ -44,7 +45,9 @@ flowchart LR
     Profiles --> DB
     Feed --> DB
     AdminModule --> DB
-    Uploads --> S3
+    Uploads --> ImageStorage
+    ImageStorage -->|database| DB
+    ImageStorage -->|s3| S3
 ```
 
 ## Request flow
@@ -125,6 +128,8 @@ flowchart LR
 | `/api/team` | Company/team-only API area | Team |
 | `/api/admin` | Super-admin-only API area | Admin |
 | `/api/uploads` | Authenticated image uploads | Upload |
+| `/api/users` | Local/S3 profile-image upload, retrieval and deletion | Users |
+| `/api/images` | Local/S3 post, project and portfolio images | Images |
 | `/health` | Service health check | Server |
 
 ## Data model at a glance
@@ -151,6 +156,6 @@ erDiagram
 1. Project response flow: engineer/team applies or receives an invitation, client accepts or rejects, and the system creates a contract.
 2. Team membership flow: team invites engineer, engineer approves or rejects, membership becomes active.
 3. Verification and reporting flow: user submits a request or report, super admin reviews it, and the record is approved, rejected, resolved, or dismissed.
-4. Upload flow: authenticated user sends an image, validation checks MIME type and size, then S3 returns a public asset URL.
+4. Upload flow: authenticated user sends a multipart profile, post, project or portfolio image; validation checks its MIME signature and 5 MB limit, then the selected storage provider persists it. Database mode stores bytes in MariaDB; S3 mode preserves the public asset URL flow.
 
 > Note: The Prisma schema already models projects, responses, contracts, ratings, team members, verifications and reports. Some corresponding route modules are currently placeholders, so their detailed API flows should be defined when those endpoints are implemented.
